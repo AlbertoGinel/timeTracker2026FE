@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User } from '@/API/MockAPI/mockDatabase'
 import { useAPI } from '@/API/useAPI'
+import router from '@/router'
 
 const STORAGE_KEY = 'timetracker_user'
 
@@ -40,6 +41,10 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.success) {
         setUser(response.data)
+
+        // Navigate to dashboard after successful login
+        router.push({ name: 'dashboard' })
+
         return true
       } else {
         error.value = response.error.message
@@ -67,6 +72,9 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       setUser(null)
       isLoading.value = false
+
+      // Navigate to home after logout
+      router.push({ name: 'home' })
     }
   }
 
@@ -83,7 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
         const response = await api.getCurrentUserProfile()
 
         if (response.success) {
-          currentUser.value = response.data
+          setUser(response.data)
           return true
         } else {
           // Session invalid, clear storage
