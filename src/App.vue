@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import MainNavbar from '@/components/MainNavbar.vue'
-import { useAppInitializer } from '@/composables/useAppInitializer'
+import MainNavbar from './features/auth/MainNavbar.vue'
+import { useAppInitializer } from '@/features/auth/useAppInitializer'
 
 const { initializeApp } = useAppInitializer()
 

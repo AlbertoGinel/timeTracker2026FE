@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { User } from '@/API/MockAPI/mockDatabase'
+import type { User } from '@/types/mainTypes'
 import { useAPI } from '@/API/useAPI'
 import router from '@/router'
 
@@ -37,19 +37,14 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const api = useAPI()
-      const response = await api.login(username, password)
+      const user = await api.login(username, password)
 
-      if (response.success) {
-        setUser(response.data)
+      setUser(user)
 
-        // Navigate to dashboard after successful login
-        router.push({ name: 'dashboard' })
+      // Navigate to dashboard after successful login
+      router.push({ name: 'dashboard' })
 
-        return true
-      } else {
-        error.value = response.error.message
-        return false
-      }
+      return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Login failed'
       return false
@@ -83,26 +78,19 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const restoreSession = async (): Promise<boolean> => {
     try {
-      const storedUser = localStorage.getItem(STORAGE_KEY)
+      const response = await fetch('/api/auth/profile/', {
+        credentials: 'include',
+      })
 
-      if (storedUser) {
-        // Verify user still exists and session is valid
-        const api = useAPI()
-        const response = await api.getCurrentUserProfile()
-
-        if (response.success) {
-          setUser(response.data)
-          return true
-        } else {
-          // Session invalid, clear storage
-          localStorage.removeItem(STORAGE_KEY)
-        }
+      if (!response.ok) {
+        return false
       }
 
-      return false
-    } catch (err) {
-      console.error('Failed to restore session:', err)
-      localStorage.removeItem(STORAGE_KEY)
+      const user = await response.json()
+      setUser(user)
+      return true
+    } catch {
+      // Silently fail - no session is normal on first visit
       return false
     }
   }
@@ -116,15 +104,10 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       const api = useAPI()
-      const response = await api.updateProfile(updates)
+      const user = await api.updateProfile(updates)
 
-      if (response.success) {
-        setUser(response.data)
-        return true
-      } else {
-        error.value = response.error.message
-        return false
-      }
+      setUser(user)
+      return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Update failed'
       return false

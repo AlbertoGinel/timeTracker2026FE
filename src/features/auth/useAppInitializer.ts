@@ -1,19 +1,27 @@
-import { useMockAPI } from '@/API/MockAPI/useMockAPI'
 import { useAuthStore } from '@/stores/useAuthStore'
+import { useMSW } from '@/API/useMSW'
+
+let initialized = false
 
 export const useAppInitializer = () => {
   /**
    * Initialize the application
-   * - Set up the mock database
+   * - Set up MSW (Mock Service Worker)
    * - Restore user session if available
    */
   const initializeApp = async (): Promise<void> => {
+    if (initialized) return
+    initialized = true
+
     try {
       console.log('Initializing application...')
 
-      // Initialize mock database
-      const mockAPI = useMockAPI()
-      await mockAPI.initializeMockDB()
+      // Initialize MSW in development
+      if (import.meta.env.DEV) {
+        const { setupMSW } = useMSW()
+        await setupMSW()
+        console.log('MSW initialized')
+      }
 
       // Try to restore user session
       const authStore = useAuthStore()
