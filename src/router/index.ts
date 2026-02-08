@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { useAuthStore } from '@/stores/useAuthStore'
-import HomeView from '@/views/HomeView.vue'
-import DashboardView from '@/views/DashboardView.vue'
-import AdminView from '@/views/AdminView.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
+import { useAuthStore } from '@/store/useAuthStore'
+import HomeView from '@/feature/home/HomeView.vue'
+import DashboardView from '@/feature/dashboard/DashboardView.vue'
+import AdminView from '@/feature/admin/AdminView.vue'
+import NotFoundView from '@/view/NotFoundView.vue'
 
 declare module 'vue-router' {
   interface RouteMeta {

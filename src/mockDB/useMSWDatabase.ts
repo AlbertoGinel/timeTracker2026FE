@@ -1,5 +1,5 @@
 import { factory, primaryKey } from '@mswjs/data'
-import type { Session } from '@/types/mainTypes'
+import type { Session } from '@/type/mainTypes'
 
 // Create the database, Define database schema
 export const db = factory({

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/stores/useAuthStore'
+import { useAuthStore } from '@/store/useAuthStore'
+import { useActivityStore } from '@/store/useActivityStore'
+import ActivityItem from './components/ActivityItem.vue'
 
 const authStore = useAuthStore()
+const activityStore = useActivityStore()
 </script>
 
 <template>
@@ -17,7 +20,24 @@ const authStore = useAuthStore()
     <div class="dashboard-content">
       <div class="card">
         <h2>Your Activities</h2>
-        <p>Activity tracking will be implemented here</p>
+
+        <div v-if="activityStore.isLoading" class="loading">Loading activities...</div>
+
+        <div v-else-if="activityStore.error" class="error">
+          {{ activityStore.error }}
+        </div>
+
+        <div v-else-if="activityStore.activities.length === 0" class="empty">
+          No activities yet. Create your first activity!
+        </div>
+
+        <div v-else class="activities-list">
+          <ActivityItem
+            v-for="activity in activityStore.activities"
+            :key="activity.id"
+            :activity="activity"
+          />
+        </div>
       </div>
 
       <div class="card">
@@ -76,5 +96,29 @@ const authStore = useAuthStore()
 
 .card p {
   color: #666;
+}
+
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loading,
+.error,
+.empty {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+}
+
+.error {
+  color: #ef4444;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+.empty {
+  color: #9ca3af;
 }
 </style>

@@ -1,42 +1,7 @@
 import { http, HttpResponse } from 'msw'
-import { db, sessionStorage } from '../useMSWDatabase'
-import type { Session, Activity } from '@/types/mainTypes'
-
-// Helper to get session from cookie
-const getSessionFromCookie = (request: Request): Session | null => {
-  const cookies = request.headers.get('cookie')
-  if (!cookies) return null
-
-  const sessionidMatch = cookies.match(/sessionid=([^;]+)/)
-  if (!sessionidMatch) return null
-
-  const token = sessionidMatch[1]
-  if (!token) return null
-
-  const session = sessionStorage.find(token)
-
-  if (!session) return null
-
-  if (Date.now() > session.expiresAt) {
-    sessionStorage.remove(token)
-    return null
-  }
-
-  return session
-}
-
-const getUserFromSession = (request: Request) => {
-  const session = getSessionFromCookie(request)
-  if (!session) return null
-
-  return db.user.findFirst({
-    where: { id: { equals: session.userId } },
-  })
-}
-
-const errorResponse = (status: number, detail: string) => {
-  return HttpResponse.json({ detail }, { status })
-}
+import { db } from '../useMSWDatabase'
+import type { Activity } from '@/type/mainTypes'
+import { getUserFromSession, errorResponse } from './useSession'
 
 export const useActivityHandlers = () => {
   return [

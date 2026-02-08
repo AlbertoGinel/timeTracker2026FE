@@ -1,49 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import { db, sessionStorage, generateSessionToken } from '../useMSWDatabase'
-import type { Session } from '@/types/mainTypes'
+import type { Session } from '@/type/mainTypes'
+import { getSessionFromCookie, getUserFromSession, errorResponse } from './useSession'
 
 const SESSION_EXPIRY = 14 * 24 * 60 * 60 * 1000 // 14 days
-
-// Helper to get session from cookie
-const getSessionFromCookie = (request: Request): Session | null => {
-  const cookies = request.headers.get('cookie')
-  if (!cookies) return null
-
-  const sessionidMatch = cookies.match(/sessionid=([^;]+)/)
-  if (!sessionidMatch) return null
-
-  const token = sessionidMatch[1]
-  if (!token) return null
-
-  const session = sessionStorage.find(token)
-
-  if (!session) return null
-
-  // Check if expired
-  if (Date.now() > session.expiresAt) {
-    sessionStorage.remove(token)
-    return null
-  }
-
-  return session
-}
-
-// Helper to get user from session
-const getUserFromSession = (request: Request) => {
-  const session = getSessionFromCookie(request)
-  if (!session) return null
-
-  const user = db.user.findFirst({
-    where: { id: { equals: session.userId } },
-  })
-
-  return user
-}
-
-// Helper to create response with Django-like error format
-const errorResponse = (status: number, detail: string) => {
-  return HttpResponse.json({ detail }, { status })
-}
 
 export const useAuthHandlers = () => {
   return [
@@ -75,6 +35,11 @@ export const useAuthHandlers = () => {
       // Return user without password
       const { ...userWithoutPassword } = user
 
+      // Store token in localStorage for MSW (since cookies don't work reliably)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('msw_session_token', token)
+      }
+
       return HttpResponse.json(userWithoutPassword, {
         status: 200,
         headers: {
@@ -88,6 +53,11 @@ export const useAuthHandlers = () => {
       const session = getSessionFromCookie(request)
       if (session) {
         sessionStorage.remove(session.token)
+      }
+
+      // Clear token from localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('msw_session_token')
       }
 
       return HttpResponse.json(

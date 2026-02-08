@@ -1,34 +1,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuthStore } from '@/stores/useAuthStore'
+import { useAuth } from './useAuth'
 
-const authStore = useAuthStore()
+const {
+  username,
+  password,
+  isAuthenticated,
+  isAdmin,
+  currentUser,
+  isLoading,
+  error,
+  login,
+  logout,
+} = useAuth()
 
-const username = ref('')
-const password = ref('')
+// UI-specific state stays in component
 const showPassword = ref(false)
 
-const handleLogin = async () => {
-  if (!username.value || !password.value) {
-    return
-  }
-
-  const success = await authStore.login(username.value, password.value)
-
-  if (success) {
-    username.value = ''
-    password.value = ''
-  }
-}
-
-const handleLogout = async () => {
-  await authStore.logout()
-}
-
+// UI-specific handlers stay in component
 const handleKeyPress = (event: KeyboardEvent) => {
   if (event.key === 'Enter') {
-    handleLogin()
+    login()
   }
+}
+
+const togglePasswordVisibility = () => {
+  showPassword.value = !showPassword.value
 }
 </script>
 
@@ -41,7 +38,7 @@ const handleKeyPress = (event: KeyboardEvent) => {
 
       <div class="navbar-content">
         <!-- Not authenticated: Show login form -->
-        <div v-if="!authStore.isAuthenticated" class="login-form">
+        <div v-if="!isAuthenticated" class="login-form">
           <input
             v-model="username"
             type="text"
@@ -57,25 +54,25 @@ const handleKeyPress = (event: KeyboardEvent) => {
               class="input"
               @keypress="handleKeyPress"
             />
-            <button type="button" class="toggle-password" @click="showPassword = !showPassword">
+            <button type="button" class="toggle-password" @click="togglePasswordVisibility">
               {{ showPassword ? '👁️' : '👁️‍🗨️' }}
             </button>
           </div>
-          <button class="btn btn-primary" :disabled="authStore.isLoading" @click="handleLogin">
-            {{ authStore.isLoading ? 'Loading...' : 'Login' }}
+          <button class="btn btn-primary" :disabled="isLoading" @click="login">
+            {{ isLoading ? 'Loading...' : 'Login' }}
           </button>
-          <div v-if="authStore.error" class="error-message">
-            {{ authStore.error }}
+          <div v-if="error" class="error-message">
+            {{ error }}
           </div>
         </div>
 
         <!-- Authenticated: Show user info -->
         <div v-else class="user-info">
           <span class="welcome-message">
-            Welcome, <strong>{{ authStore.currentUser?.nickname }}</strong>
-            <span v-if="authStore.isAdmin" class="admin-badge">👑 Admin</span>
+            Welcome, <strong>{{ currentUser?.nickname }}</strong>
+            <span v-if="isAdmin" class="admin-badge">👑 Admin</span>
           </span>
-          <button class="btn btn-secondary" @click="handleLogout">Logout</button>
+          <button class="btn btn-secondary" @click="logout">Logout</button>
         </div>
       </div>
     </div>
