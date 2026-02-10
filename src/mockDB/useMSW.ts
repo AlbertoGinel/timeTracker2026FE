@@ -3,6 +3,7 @@ import { initializeDatabase, db, sessionStorage } from './useMSWDatabase'
 import { useAuthHandlers } from './handlers/useAuthHandlers'
 import { useActivityHandlers } from './handlers/useActivityHandlers'
 import { useAdminHandlers } from './handlers/useAdminHandlers'
+import { useStampHandlers } from './handlers/useStampHandlers'
 
 // Extend Window interface for debug utilities
 declare global {
@@ -23,7 +24,12 @@ export const useMSW = () => {
     }
 
     // Combine all handlers
-    const handlers = [...useAuthHandlers(), ...useActivityHandlers(), ...useAdminHandlers()]
+    const handlers = [
+      ...useAuthHandlers(),
+      ...useActivityHandlers(),
+      ...useAdminHandlers(),
+      ...useStampHandlers(),
+    ]
 
     // Setup worker
     const worker = setupWorker(...handlers)

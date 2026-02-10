@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/store/useAuthStore'
-import { useActivityStore } from '@/store/useActivityStore'
-import ActivityItem from './components/ActivityItem.vue'
+import { useDashboard } from './useDashboard'
+import ActivityItem from './ActivityItem.vue'
+import StampItem from './StampItem.vue'
 
 const authStore = useAuthStore()
-const activityStore = useActivityStore()
+const { activityStore, stampStore, onActivityPressed } = useDashboard()
 </script>
 
 <template>
@@ -19,7 +20,7 @@ const activityStore = useActivityStore()
 
     <div class="dashboard-content">
       <div class="card">
-        <h2>Your Activities</h2>
+        <h2>Activities</h2>
 
         <div v-if="activityStore.isLoading" class="loading">Loading activities...</div>
 
@@ -32,17 +33,39 @@ const activityStore = useActivityStore()
         </div>
 
         <div v-else class="activities-list">
-          <ActivityItem
+          <button
             v-for="activity in activityStore.activities"
             :key="activity.id"
-            :activity="activity"
-          />
+            type="button"
+            class="activity-button"
+            @click="onActivityPressed(activity)"
+          >
+            <ActivityItem :activity="activity" />
+          </button>
         </div>
       </div>
 
       <div class="card">
-        <h2>Statistics</h2>
-        <p>Your stats and progress will appear here</p>
+        <h2>Stamps</h2>
+
+        <div v-if="stampStore.isLoading" class="loading">Loading stamps...</div>
+
+        <div v-else-if="stampStore.error" class="error">
+          {{ stampStore.error }}
+        </div>
+
+        <div v-else-if="stampStore.stamps.length === 0" class="empty">
+          No stamps yet. Start tracking your activities!
+        </div>
+
+        <div v-else class="stamps-list">
+          <StampItem v-for="stamp in stampStore.stamps" :key="stamp.id" :stamp="stamp" />
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Intervals</h2>
+        <div class="empty">No intervals yet. Generate some data first.</div>
       </div>
     </div>
   </div>
@@ -52,12 +75,12 @@ const activityStore = useActivityStore()
 .dashboard {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: 1rem 2rem 3rem;
 }
 
 .dashboard-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
 }
 
 .dashboard-header h1 {
@@ -98,10 +121,26 @@ const activityStore = useActivityStore()
   color: #666;
 }
 
-.activities-list {
+.activities-list,
+.stamps-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.activity-button {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.activity-button:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 4px;
+  border-radius: 10px;
 }
 
 .loading,

@@ -1,5 +1,6 @@
 import { factory, primaryKey } from '@mswjs/data'
 import type { Session } from '@/type/mainTypes'
+import { seedStamps } from './useSeedStamps'
 
 // Create the database, Define database schema
 export const db = factory({
@@ -20,6 +21,13 @@ export const db = factory({
     created_at: String,
     updated_at: String,
     user: String,
+  },
+  stamp: {
+    id: primaryKey(String),
+    timestamp: String,
+    user: String,
+    type: String,
+    activity_id: String,
   },
 })
 
@@ -207,15 +215,19 @@ export const initializeDatabase = () => {
     user: user3.id,
   })
 
+  seedStamps(db, { monthsBack: 6 })
+
   // Cleanup expired sessions
   sessionStorage.cleanup()
 
   console.log(
     'MSW database initialized with',
     db.user.count(),
-    'users and',
+    'users,',
     db.activity.count(),
-    'activities',
+    'activities, and',
+    db.stamp.count(),
+    'stamps',
   )
 }
 

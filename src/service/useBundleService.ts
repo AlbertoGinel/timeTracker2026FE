@@ -1,4 +1,5 @@
 import { useActivityStore } from '@/store/useActivityStore'
+import { useStampStore } from '@/store/useStampStore'
 
 /**
  * Bundle Service - orchestrates loading all user data after authentication
@@ -6,13 +7,14 @@ import { useActivityStore } from '@/store/useActivityStore'
  */
 export const useBundleService = () => {
   const activityStore = useActivityStore()
+  const stampStore = useStampStore()
 
   /**
    * Load all user data - called after login or session restore
    */
   const loadUserBundle = async (): Promise<void> => {
     try {
-      await activityStore.fetchActivities()
+      await Promise.all([activityStore.fetchActivities(), stampStore.fetchStamps()])
     } catch (error) {
       console.error('Failed to load user bundle:', error)
       throw error
@@ -24,6 +26,7 @@ export const useBundleService = () => {
    */
   const clearUserBundle = (): void => {
     activityStore.clearActivities()
+    stampStore.clearStamps()
   }
 
   return {
