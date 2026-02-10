@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import type { StampWithActivity } from '@/type/mainTypes'
+import { useAuthStore } from '@/store/useAuthStore'
+import { DateTime } from 'luxon'
 import { computed } from 'vue'
 
 const props = defineProps<{
   stamp: StampWithActivity
 }>()
 
+const authStore = useAuthStore()
+
 const formattedTime = computed(() => {
-  const date = new Date(props.stamp.timestamp)
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const zone = authStore.currentUser?.timezone ?? 'UTC'
+  return DateTime.fromISO(props.stamp.timestamp, { zone }).toFormat('LLL dd, HH:mm')
 })
 
 const isStop = computed(() => props.stamp.type === 'stop')

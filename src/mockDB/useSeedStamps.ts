@@ -1,3 +1,5 @@
+import { DateTime } from 'luxon'
+
 type DbType = typeof import('./useMSWDatabase').db
 
 type SeedOptions = {
@@ -23,21 +25,30 @@ const weightedPick = (weights: [number, ...number[]]) => {
   return weights.length - 1
 }
 
-const toStampTimestamp = (date: Date) => date.toISOString().slice(0, 19)
+const toStampTimestamp = (date: Date) => {
+  // Always emit Zulu (UTC) timestamps without milliseconds
+  const iso = DateTime.fromJSDate(date, { zone: 'utc' }).toISO({
+    suppressMilliseconds: true,
+  })
+  return (iso ?? DateTime.utc().toISO({ suppressMilliseconds: true }) ?? '').replace('+00:00', 'Z')
+}
 
 const advanceCursor = (cursor: Date) => {
   const bucket = weightedPick([20, 70, 10])
-  let deltaMs = 0
+  let deltaSeconds = 0
 
   if (bucket === 0) {
-    deltaMs = randomInt(1, 60) * 1000
+    // Short jump: 1-60 seconds
+    deltaSeconds = randomInt(1, 60)
   } else if (bucket === 1) {
-    deltaMs = randomInt(60, 8 * 60 * 60) * 1000
+    // Medium jump: 1 minute to 8 hours
+    deltaSeconds = randomInt(60, 8 * 60 * 60)
   } else {
-    deltaMs = randomInt(8 * 60 * 60, 2 * 24 * 60 * 60) * 1000
+    // Long jump: 8 hours to 2 days
+    deltaSeconds = randomInt(8 * 60 * 60, 2 * 24 * 60 * 60)
   }
 
-  return new Date(cursor.getTime() + deltaMs)
+  return DateTime.fromJSDate(cursor, { zone: 'utc' }).plus({ seconds: deltaSeconds }).toJSDate()
 }
 
 export const seedStamps = (db: DbType, options: SeedOptions = {}) => {

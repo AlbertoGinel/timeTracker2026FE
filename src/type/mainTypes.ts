@@ -6,6 +6,7 @@ export type User = {
   password: string
   nickname: string
   role: UserRole
+  timezone: string
 }
 
 export type Activity = {
@@ -41,4 +42,25 @@ export type ActivitySummary = Pick<Activity, 'id' | 'color' | 'name' | 'icon'>
 
 export interface StampWithActivity extends Stamp {
   activity: ActivitySummary | null
+}
+
+export type ActivityInfo = Pick<
+  Activity,
+  'id' | 'name' | 'color' | 'icon' | 'points_per_hour' | 'seconds_free'
+>
+
+export interface Interval {
+  id: string
+  fromDate: string // ISO string with Z (UTC), e.g., "2025-06-21T20:31:50Z"
+  toDate: string | null // ISO string with Z (UTC), null if ongoing
+  duration: number // integer seconds (no decimals)
+  activity: ActivityInfo
+}
+
+export interface Interval {
+  id: string
+  fromDate: string // ISO string with Z (UTC), e.g., "2025-06-21T20:31:50Z"
+  toDate: string | null // ISO string with Z (UTC), null if ongoing
+  duration: number // integer seconds (no decimals)
+  activity: ActivityInfo
 }

@@ -10,6 +10,7 @@ export const db = factory({
     password: String,
     nickname: String,
     role: String,
+    timezone: String,
   },
   activity: {
     id: primaryKey(String),
@@ -83,6 +84,7 @@ export const initializeDatabase = () => {
     password: 'password123',
     nickname: 'John',
     role: 'admin',
+    timezone: 'Europe/Tallinn',
   })
 
   const user2 = db.user.create({
@@ -91,6 +93,7 @@ export const initializeDatabase = () => {
     password: 'password456',
     nickname: 'Jane',
     role: 'regular',
+    timezone: 'Europe/Tallinn',
   })
 
   const user3 = db.user.create({
@@ -99,6 +102,7 @@ export const initializeDatabase = () => {
     password: 'password789',
     nickname: 'Bob',
     role: 'regular',
+    timezone: 'Europe/Tallinn',
   })
 
   // Create activities for each user

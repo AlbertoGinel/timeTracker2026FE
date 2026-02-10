@@ -4,6 +4,7 @@ import { useAuthHandlers } from './handlers/useAuthHandlers'
 import { useActivityHandlers } from './handlers/useActivityHandlers'
 import { useAdminHandlers } from './handlers/useAdminHandlers'
 import { useStampHandlers } from './handlers/useStampHandlers'
+import { useIntervalHandlers } from './handlers/useIntervalHandlers'
 
 // Extend Window interface for debug utilities
 declare global {
@@ -29,6 +30,7 @@ export const useMSW = () => {
       ...useActivityHandlers(),
       ...useAdminHandlers(),
       ...useStampHandlers(),
+      ...useIntervalHandlers(),
     ]
 
     // Setup worker

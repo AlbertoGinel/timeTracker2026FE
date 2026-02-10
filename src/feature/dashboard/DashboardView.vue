@@ -3,9 +3,19 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { useDashboard } from './useDashboard'
 import ActivityItem from './ActivityItem.vue'
 import StampItem from './StampItem.vue'
+import IntervalItem from './IntervalItem.vue'
+import OngoinInterval from './OngoinInterval.vue'
 
 const authStore = useAuthStore()
-const { activityStore, stampStore, onActivityPressed } = useDashboard()
+const {
+  activityStore,
+  stampStore,
+  intervalStore,
+  ongoingInterval,
+  intervalsForList,
+  onActivityPressed,
+  onStopPressed,
+} = useDashboard()
 </script>
 
 <template>
@@ -14,11 +24,16 @@ const { activityStore, stampStore, onActivityPressed } = useDashboard()
       <h1>📊 Dashboard</h1>
       <p>
         Welcome back, <strong>{{ authStore.currentUser?.nickname }}</strong
-        >!
+        >! {{ authStore.currentUser?.timezone }}
       </p>
     </div>
 
     <div class="dashboard-content">
+      <div class="card card-ongoing">
+        <h2>Ongoing Interval</h2>
+        <OngoinInterval :interval="ongoingInterval" :onStop="onStopPressed" />
+      </div>
+
       <div class="card">
         <h2>Activities</h2>
 
@@ -65,7 +80,24 @@ const { activityStore, stampStore, onActivityPressed } = useDashboard()
 
       <div class="card">
         <h2>Intervals</h2>
-        <div class="empty">No intervals yet. Generate some data first.</div>
+
+        <div v-if="intervalStore.isLoading" class="loading">Loading intervals...</div>
+
+        <div v-else-if="intervalStore.error" class="error">
+          {{ intervalStore.error }}
+        </div>
+
+        <div v-else-if="intervalsForList.length === 0" class="empty">
+          No intervals yet. Generate some data first.
+        </div>
+
+        <div v-else class="intervals-list">
+          <IntervalItem
+            v-for="interval in intervalsForList"
+            :key="interval.id"
+            :interval="interval"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -79,19 +111,23 @@ const { activityStore, stampStore, onActivityPressed } = useDashboard()
 }
 
 .dashboard-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .dashboard-header h1 {
   color: #333;
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 2.1rem;
+  margin: 0;
 }
 
 .dashboard-header p {
   color: #666;
-  font-size: 1.2rem;
+  font-size: 1rem;
+  margin: 0;
 }
 
 .dashboard-header strong {
@@ -111,6 +147,15 @@ const { activityStore, stampStore, onActivityPressed } = useDashboard()
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
+.card-ongoing {
+  grid-column: 1 / -1;
+  padding: 1.25rem 1.5rem;
+}
+
+.card-ongoing h2 {
+  margin-bottom: 0.75rem;
+}
+
 .card h2 {
   color: #333;
   font-size: 1.5rem;
@@ -122,7 +167,8 @@ const { activityStore, stampStore, onActivityPressed } = useDashboard()
 }
 
 .activities-list,
-.stamps-list {
+.stamps-list,
+.intervals-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
