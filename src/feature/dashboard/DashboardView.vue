@@ -5,12 +5,14 @@ import ActivityItem from './ActivityItem.vue'
 import StampItem from './StampItem.vue'
 import IntervalItem from './IntervalItem.vue'
 import OngoinInterval from './OngoinInterval.vue'
+import DayItem from './DayItem.vue'
 
 const authStore = useAuthStore()
 const {
   activityStore,
   stampStore,
   intervalStore,
+  dayStore,
   ongoingInterval,
   intervalsForList,
   onActivityPressed,
@@ -99,13 +101,27 @@ const {
           />
         </div>
       </div>
+      <div class="card">
+        <h2>Days</h2>
+
+        <div v-if="dayStore.isLoading" class="loading">Loading days...</div>
+
+        <div v-else-if="dayStore.error" class="error">
+          {{ dayStore.error }}
+        </div>
+
+        <div v-else-if="dayStore.days.length === 0" class="empty">No days available.</div>
+
+        <div v-else class="days-list">
+          <DayItem v-for="day in dayStore.days" :key="day.id" :day="day" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .dashboard {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 1rem 2rem 3rem;
 }
@@ -136,7 +152,7 @@ const {
 
 .dashboard-content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 2rem;
 }
 
@@ -168,7 +184,8 @@ const {
 
 .activities-list,
 .stamps-list,
-.intervals-list {
+.intervals-list,
+.days-list {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

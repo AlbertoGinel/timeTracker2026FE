@@ -57,10 +57,40 @@ export interface Interval {
   activity: ActivityInfo
 }
 
-export interface Interval {
+// Day types (serialized responses with populated activity objects)
+
+export type DayInterval = {
+  intervalId: string
+  activityId: string
+  activity: ActivitySummary // Populated from activities table
+  startLocal: string
+  endLocal: string
+  durationMs: number
+}
+
+export type DayActivityTotal = {
+  activityId: string
+  activity: ActivitySummary // Populated from activities table
+  durationMs: number
+  pointsTotal: number
+  pointsPerHourSnapshot: number
+}
+
+export type Day = {
   id: string
-  fromDate: string // ISO string with Z (UTC), e.g., "2025-06-21T20:31:50Z"
-  toDate: string | null // ISO string with Z (UTC), null if ongoing
-  duration: number // integer seconds (no decimals)
-  activity: ActivityInfo
+  user: string
+  timezone: string
+  dateKey: string
+  dayStartUtc: string
+  dayEndUtc: string
+  dayLengthMs: number
+  timezoneOffsetStart: number
+  timezoneOffsetEnd: number
+  intervals: DayInterval[]
+  activityTotals: DayActivityTotal[]
+  totalDurationMs: number
+  totalPoints: number
+  isFinalized: boolean
+  createdAt: string
+  updatedAt: string
 }

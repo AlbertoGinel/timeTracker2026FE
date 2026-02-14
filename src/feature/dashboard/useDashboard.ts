@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useActivityStore } from '@/store/useActivityStore'
 import { useStampStore } from '@/store/useStampStore'
 import { useIntervalStore } from '@/store/useIntervalStore'
+import { useDayStore } from '@/store/useDayStore'
 import { useBundleService } from '@/service/useBundleService'
 
 const toStampTimestamp = () => new Date().toISOString().slice(0, 19)
@@ -11,6 +12,7 @@ export const useDashboard = () => {
   const activityStore = useActivityStore()
   const stampStore = useStampStore()
   const intervalStore = useIntervalStore()
+  const dayStore = useDayStore()
   const bundleService = useBundleService()
 
   const ongoingInterval = computed(
@@ -50,6 +52,7 @@ export const useDashboard = () => {
     activityStore,
     stampStore,
     intervalStore,
+    dayStore,
     ongoingInterval,
     intervalsForList,
     onActivityPressed,

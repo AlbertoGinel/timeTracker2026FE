@@ -1,33 +1,24 @@
 import { http, HttpResponse } from 'msw'
 import { db } from '../useMSWDatabase'
-import type { Stamp, StampWithActivity } from '@/type/mainTypes'
+import type { Stamp } from '@/type/mainTypes'
 import { getUserFromSession, errorResponse } from './useSession'
+import { serializeStamp } from '../serializers/stampSerializer'
 
-const expandStamp = (stamp: Stamp): StampWithActivity => {
-  if (!stamp.activity_id) {
-    return { ...stamp, activity: null }
-  }
-
-  const activity = db.activity.findFirst({
-    where: { id: { equals: stamp.activity_id } },
-  })
-
-  if (!activity) {
-    return { ...stamp, activity: null }
-  }
-
-  return {
-    ...stamp,
-    activity: {
+export const useStampHandlers = () => {
+  // Activity lookup helper
+  const getActivity = (activityId: string) => {
+    const activity = db.activity.findFirst({
+      where: { id: { equals: activityId } },
+    })
+    if (!activity) return null
+    return {
       id: activity.id,
       color: activity.color,
       name: activity.name,
       icon: activity.icon,
-    },
+    }
   }
-}
 
-export const useStampHandlers = () => {
   return [
     // Get user's stamps
     http.get('/api/stamps/', ({ request }) => {
@@ -45,7 +36,7 @@ export const useStampHandlers = () => {
       }) as Stamp[]
 
       const expandedStamps = stamps
-        .map(expandStamp)
+        .map((stamp) => serializeStamp(stamp, getActivity))
         .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
       console.log('[StampHandlers] Stamps found:', expandedStamps.length, expandedStamps)
       return HttpResponse.json(expandedStamps)
@@ -69,7 +60,7 @@ export const useStampHandlers = () => {
         user: user.id,
       }) as Stamp
 
-      return HttpResponse.json(expandStamp(stamp), { status: 201 })
+      return HttpResponse.json(serializeStamp(stamp, getActivity), { status: 201 })
     }),
 
     // Update stamp
@@ -103,7 +94,7 @@ export const useStampHandlers = () => {
         },
       }) as Stamp
 
-      return HttpResponse.json(expandStamp(updatedStamp))
+      return HttpResponse.json(serializeStamp(updatedStamp, getActivity))
     }),
 
     // Delete stamp

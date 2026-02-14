@@ -30,6 +30,19 @@ export const db = factory({
     type: String,
     activity_id: String,
   },
+  day: {
+    id: primaryKey(String),
+    user: String,
+    timezone: String,
+    dateKey: String,
+    intervals: Array,
+    activityTotals: Array,
+    totalDurationMs: Number,
+    totalPoints: Number,
+    isFinalized: Boolean,
+    createdAt: String,
+    updatedAt: String,
+  },
 })
 
 // Session storage in localStorage
