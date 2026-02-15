@@ -1,6 +1,13 @@
 import { factory, primaryKey } from '@mswjs/data'
 import type { Session } from '@/type/mainTypes'
 import { seedStamps } from './useSeedStamps'
+import {
+  isIndexedDBInitialized,
+  loadFromIndexedDB,
+  saveToIndexedDB,
+  type IndexedDBData,
+} from './useIndexedDB'
+import type { UserDB, ActivityDB, StampDB, DayDB } from './DBTypes'
 
 // Create the database, Define database schema
 export const db = factory({
@@ -80,172 +87,225 @@ export const sessionStorage = {
   },
 }
 
-// Initialize database with mock data
-export const initializeDatabase = () => {
-  // Check if already initialized
+// Initialize database with mock data - now with IndexedDB persistence
+export const initializeDatabase = async () => {
+  // Check if already initialized in memory
   if (db.user.count() > 0) {
-    console.log('MSW database already initialized')
+    console.log('MSW database already initialized in memory')
     return
   }
 
-  console.log('Initializing MSW database...')
+  // Check if IndexedDB has persisted data
+  const hasPersistedData = await isIndexedDBInitialized()
 
-  // Create users
-  const user1 = db.user.create({
-    id: crypto.randomUUID(),
-    username: 'john_doe',
-    password: 'password123',
-    nickname: 'John',
-    role: 'admin',
-    timezone: 'Europe/Tallinn',
-  })
+  if (hasPersistedData) {
+    console.log('📦 Loading data from IndexedDB...')
+    const data = await loadFromIndexedDB()
 
-  const user2 = db.user.create({
-    id: crypto.randomUUID(),
-    username: 'jane_smith',
-    password: 'password456',
-    nickname: 'Jane',
-    role: 'regular',
-    timezone: 'Europe/Tallinn',
-  })
+    // Load users into MSW db
+    data.users.forEach((user) => db.user.create(user))
 
-  const user3 = db.user.create({
-    id: crypto.randomUUID(),
-    username: 'bob_wilson',
-    password: 'password789',
-    nickname: 'Bob',
-    role: 'regular',
-    timezone: 'Europe/Tallinn',
-  })
+    // Load activities into MSW db
+    data.activities.forEach((activity) => db.activity.create(activity))
 
-  // Create activities for each user
-  const now = new Date().toISOString()
+    // Load stamps into MSW db
+    data.stamps.forEach((stamp) => db.stamp.create(stamp))
 
-  // John's activities
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#3B82F6',
-    name: 'Coding',
-    icon: '💻',
-    points_per_hour: 100,
-    seconds_free: 3600,
-    created_at: now,
-    updated_at: now,
-    user: user1.id,
-  })
+    // Load days into MSW db
+    data.days.forEach((day) => db.day.create(day))
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#10B981',
-    name: 'Exercise',
-    icon: '🏃',
-    points_per_hour: 80,
-    seconds_free: 1800,
-    created_at: now,
-    updated_at: now,
-    user: user1.id,
-  })
+    // Restore sessions to localStorage
+    sessionStorage.save(data.sessions)
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#F59E0B',
-    name: 'Reading',
-    icon: '📚',
-    points_per_hour: 60,
-    seconds_free: 2400,
-    created_at: now,
-    updated_at: now,
-    user: user1.id,
-  })
+    console.log(
+      '✅ MSW database loaded from IndexedDB:',
+      db.user.count(),
+      'users,',
+      db.activity.count(),
+      'activities,',
+      db.stamp.count(),
+      'stamps,',
+      db.day.count(),
+      'days',
+    )
+  } else {
+    console.log('📦 IndexedDB empty - seeding fresh data...')
 
-  // Jane's activities
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#EC4899',
-    name: 'Writing',
-    icon: '✍️',
-    points_per_hour: 90,
-    seconds_free: 3000,
-    created_at: now,
-    updated_at: now,
-    user: user2.id,
-  })
+    // Create users
+    const user1 = db.user.create({
+      id: crypto.randomUUID(),
+      username: 'john_doe',
+      password: 'password123',
+      nickname: 'John',
+      role: 'admin',
+      timezone: 'Europe/Tallinn',
+    })
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#8B5CF6',
-    name: 'Meditation',
-    icon: '🧘',
-    points_per_hour: 70,
-    seconds_free: 1200,
-    created_at: now,
-    updated_at: now,
-    user: user2.id,
-  })
+    const user2 = db.user.create({
+      id: crypto.randomUUID(),
+      username: 'jane_smith',
+      password: 'password456',
+      nickname: 'Jane',
+      role: 'regular',
+      timezone: 'Europe/Tallinn',
+    })
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#06B6D4',
-    name: 'Drawing',
-    icon: '🎨',
-    points_per_hour: 85,
-    seconds_free: 2700,
-    created_at: now,
-    updated_at: now,
-    user: user2.id,
-  })
+    const user3 = db.user.create({
+      id: crypto.randomUUID(),
+      username: 'bob_wilson',
+      password: 'password789',
+      nickname: 'Bob',
+      role: 'regular',
+      timezone: 'Europe/Tallinn',
+    })
 
-  // Bob's activities
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#EF4444',
-    name: 'Gaming',
-    icon: '🎮',
-    points_per_hour: 50,
-    seconds_free: 3600,
-    created_at: now,
-    updated_at: now,
-    user: user3.id,
-  })
+    // Create activities for each user
+    const now = new Date().toISOString()
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#14B8A6',
-    name: 'Cooking',
-    icon: '🍳',
-    points_per_hour: 75,
-    seconds_free: 1500,
-    created_at: now,
-    updated_at: now,
-    user: user3.id,
-  })
+    // John's activities
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#3B82F6',
+      name: 'Coding',
+      icon: '💻',
+      points_per_hour: 100,
+      seconds_free: 3600,
+      created_at: now,
+      updated_at: now,
+      user: user1.id,
+    })
 
-  db.activity.create({
-    id: crypto.randomUUID(),
-    color: '#A855F7',
-    name: 'Music',
-    icon: '🎵',
-    points_per_hour: 65,
-    seconds_free: 2100,
-    created_at: now,
-    updated_at: now,
-    user: user3.id,
-  })
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#10B981',
+      name: 'Exercise',
+      icon: '🏃',
+      points_per_hour: 80,
+      seconds_free: 1800,
+      created_at: now,
+      updated_at: now,
+      user: user1.id,
+    })
 
-  seedStamps(db, { monthsBack: 6 })
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#F59E0B',
+      name: 'Reading',
+      icon: '📚',
+      points_per_hour: 60,
+      seconds_free: 2400,
+      created_at: now,
+      updated_at: now,
+      user: user1.id,
+    })
 
-  // Cleanup expired sessions
-  sessionStorage.cleanup()
+    // Jane's activities
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#EC4899',
+      name: 'Writing',
+      icon: '✍️',
+      points_per_hour: 90,
+      seconds_free: 3000,
+      created_at: now,
+      updated_at: now,
+      user: user2.id,
+    })
 
-  console.log(
-    'MSW database initialized with',
-    db.user.count(),
-    'users,',
-    db.activity.count(),
-    'activities, and',
-    db.stamp.count(),
-    'stamps',
-  )
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#8B5CF6',
+      name: 'Meditation',
+      icon: '🧘',
+      points_per_hour: 70,
+      seconds_free: 1200,
+      created_at: now,
+      updated_at: now,
+      user: user2.id,
+    })
+
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#06B6D4',
+      name: 'Drawing',
+      icon: '🎨',
+      points_per_hour: 85,
+      seconds_free: 2700,
+      created_at: now,
+      updated_at: now,
+      user: user2.id,
+    })
+
+    // Bob's activities
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#EF4444',
+      name: 'Gaming',
+      icon: '🎮',
+      points_per_hour: 50,
+      seconds_free: 3600,
+      created_at: now,
+      updated_at: now,
+      user: user3.id,
+    })
+
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#14B8A6',
+      name: 'Cooking',
+      icon: '🍳',
+      points_per_hour: 75,
+      seconds_free: 1500,
+      created_at: now,
+      updated_at: now,
+      user: user3.id,
+    })
+
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#A855F7',
+      name: 'Music',
+      icon: '🎵',
+      points_per_hour: 65,
+      seconds_free: 2100,
+      created_at: now,
+      updated_at: now,
+      user: user3.id,
+    })
+
+    seedStamps(db, { monthsBack: 6 })
+
+    // Cleanup expired sessions
+    sessionStorage.cleanup()
+
+    console.log(
+      '✅ MSW database seeded:',
+      db.user.count(),
+      'users,',
+      db.activity.count(),
+      'activities,',
+      db.stamp.count(),
+      'stamps',
+    )
+
+    // Save the seeded data to IndexedDB for persistence
+    await persistToIndexedDB()
+  }
+}
+
+/**
+ * Persist current MSW database state to IndexedDB
+ */
+export const persistToIndexedDB = async () => {
+  const data: IndexedDBData = {
+    users: db.user.getAll() as UserDB[],
+    activities: db.activity.getAll() as ActivityDB[],
+    stamps: db.stamp.getAll() as StampDB[],
+    days: db.day.getAll() as DayDB[],
+    sessions: sessionStorage.getAll(),
+  }
+
+  await saveToIndexedDB(data)
 }
 
 // Helper to generate session token

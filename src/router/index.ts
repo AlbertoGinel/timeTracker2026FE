@@ -53,13 +53,6 @@ router.beforeEach(async (to, from, next) => {
     await authStore.restoreSession()
   }
 
-  // Redirect authenticated users away from home to dashboard
-  if (to.name === 'home' && authStore.isAuthenticated) {
-    console.log('🔀 User is authenticated. Redirecting to dashboard.')
-    next({ name: 'dashboard' })
-    return
-  }
-
   // Check if route requires authentication
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Redirect to home if not authenticated

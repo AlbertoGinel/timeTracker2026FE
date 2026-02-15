@@ -17,8 +17,8 @@ declare global {
 
 export const useMSW = () => {
   const setupMSW = async () => {
-    // Initialize database with mock data
-    initializeDatabase()
+    // Initialize database with mock data (checks IndexedDB first)
+    await initializeDatabase()
 
     if (import.meta.env.DEV) {
       window.mockDB = db

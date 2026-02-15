@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { db } from '../useMSWDatabase'
 import type { Activity } from '@/type/mainTypes'
 import { getUserFromSession, errorResponse } from './useSession'
+import { autoPersist } from '../useAutoPersist'
 
 export const useActivityHandlers = () => {
   return [
@@ -42,6 +43,7 @@ export const useActivityHandlers = () => {
         updated_at: now,
       })
 
+      autoPersist()
       return HttpResponse.json(activity, { status: 201 })
     }),
 
@@ -76,6 +78,7 @@ export const useActivityHandlers = () => {
         },
       })
 
+      autoPersist()
       return HttpResponse.json(updatedActivity)
     }),
 
@@ -105,6 +108,7 @@ export const useActivityHandlers = () => {
         where: { id: { equals: activityId } },
       })
 
+      autoPersist()
       return new HttpResponse(null, { status: 204 })
     }),
   ]

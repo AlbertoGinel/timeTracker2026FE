@@ -122,7 +122,7 @@ export const computeDaysFromStamps = (
     // Compute activity totals
     const activityMap = new Map<
       string,
-      { durationMs: number; activity: ActivityInfo; pointsPerHour: number }
+      { durationMs: number; activity: ActivityInfo; pointsPerHour: number; secondsFree: number }
     >()
 
     populatedIntervals.forEach((interval) => {
@@ -134,6 +134,7 @@ export const computeDaysFromStamps = (
           durationMs: 0,
           activity,
           pointsPerHour: activity.points_per_hour,
+          secondsFree: activity.seconds_free,
         })
       }
       const entry = activityMap.get(interval.activityId)!
@@ -141,18 +142,26 @@ export const computeDaysFromStamps = (
     })
 
     const activityTotals: DayActivityTotal[] = Array.from(activityMap.entries()).map(
-      ([activityId, data]) => ({
-        activityId,
-        activity: {
-          id: data.activity.id,
-          name: data.activity.name,
-          color: data.activity.color,
-          icon: data.activity.icon,
-        },
-        durationMs: data.durationMs,
-        pointsTotal: (data.durationMs / (1000 * 60 * 60)) * data.pointsPerHour,
-        pointsPerHourSnapshot: data.pointsPerHour,
-      }),
+      ([activityId, data]) => {
+        // Calculate billable duration (subtract free seconds from total)
+        const totalSeconds = data.durationMs / 1000
+        const billableSeconds = Math.max(0, totalSeconds - data.secondsFree)
+        const billableHours = billableSeconds / (60 * 60)
+        const pointsTotal = billableHours * data.pointsPerHour
+
+        return {
+          activityId,
+          activity: {
+            id: data.activity.id,
+            name: data.activity.name,
+            color: data.activity.color,
+            icon: data.activity.icon,
+          },
+          durationMs: data.durationMs,
+          pointsTotal,
+          pointsPerHourSnapshot: data.pointsPerHour,
+        }
+      },
     )
 
     // Compute day totals

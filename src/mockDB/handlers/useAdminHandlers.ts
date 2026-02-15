@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { db } from '../useMSWDatabase'
 import type { User } from '@/type/mainTypes'
 import { getUserFromSession, errorResponse } from './useSession'
+import { autoPersist } from '../useAutoPersist'
 
 const requireAdmin = (request: Request) => {
   const user = getUserFromSession(request)
@@ -73,6 +74,7 @@ export const useAdminHandlers = () => {
         return errorResponse(404, 'User not found')
       }
 
+      autoPersist()
       const { ...userWithoutPassword } = updatedUser
       return HttpResponse.json(userWithoutPassword)
     }),
@@ -101,6 +103,7 @@ export const useAdminHandlers = () => {
         where: { id: { equals: userId } },
       })
 
+      autoPersist()
       return new HttpResponse(null, { status: 204 })
     }),
 

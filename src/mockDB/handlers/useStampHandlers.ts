@@ -3,6 +3,7 @@ import { db } from '../useMSWDatabase'
 import type { Stamp } from '@/type/mainTypes'
 import { getUserFromSession, errorResponse } from './useSession'
 import { serializeStamp } from '../serializers/stampSerializer'
+import { autoPersist } from '../useAutoPersist'
 
 export const useStampHandlers = () => {
   // Activity lookup helper
@@ -60,6 +61,7 @@ export const useStampHandlers = () => {
         user: user.id,
       }) as Stamp
 
+      autoPersist()
       return HttpResponse.json(serializeStamp(stamp, getActivity), { status: 201 })
     }),
 
@@ -94,6 +96,7 @@ export const useStampHandlers = () => {
         },
       }) as Stamp
 
+      autoPersist()
       return HttpResponse.json(serializeStamp(updatedStamp, getActivity))
     }),
 
@@ -123,6 +126,7 @@ export const useStampHandlers = () => {
         where: { id: { equals: stampId } },
       })
 
+      autoPersist()
       return new HttpResponse(null, { status: 204 })
     }),
   ]

@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuth } from './useAuth'
+
+const route = useRoute()
+const router = useRouter()
 
 const {
   username,
@@ -16,6 +20,9 @@ const {
 
 // UI-specific state stays in component
 const showPassword = ref(false)
+
+const isOnDashboard = () => route.name === 'dashboard'
+const goToDashboard = () => router.push({ name: 'dashboard' })
 
 // UI-specific handlers stay in component
 const handleKeyPress = (event: KeyboardEvent) => {
@@ -72,6 +79,9 @@ const togglePasswordVisibility = () => {
             Welcome, <strong>{{ currentUser?.nickname }}</strong>
             <span v-if="isAdmin" class="admin-badge">👑 Admin</span>
           </span>
+          <button v-if="!isOnDashboard()" class="btn btn-dashboard" @click="goToDashboard">
+            📊 Dashboard
+          </button>
           <button class="btn btn-secondary" @click="logout">Logout</button>
         </div>
       </div>
@@ -180,6 +190,18 @@ const togglePasswordVisibility = () => {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.btn-dashboard {
+  background: rgba(255, 255, 255, 0.95);
+  color: #667eea;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-dashboard:hover {
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .btn-secondary {

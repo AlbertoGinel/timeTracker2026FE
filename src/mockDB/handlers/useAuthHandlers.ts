@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { db, sessionStorage, generateSessionToken } from '../useMSWDatabase'
 import type { Session } from '@/type/mainTypes'
 import { getSessionFromCookie, getUserFromSession, errorResponse } from './useSession'
+import { autoPersist } from '../useAutoPersist'
 
 const SESSION_EXPIRY = 14 * 24 * 60 * 60 * 1000 // 14 days
 
@@ -40,6 +41,7 @@ export const useAuthHandlers = () => {
         localStorage.setItem('msw_session_token', token)
       }
 
+      autoPersist()
       return HttpResponse.json(userWithoutPassword, {
         status: 200,
         headers: {
@@ -60,6 +62,7 @@ export const useAuthHandlers = () => {
         localStorage.removeItem('msw_session_token')
       }
 
+      autoPersist()
       return HttpResponse.json(
         {},
         {
@@ -105,6 +108,7 @@ export const useAuthHandlers = () => {
         return errorResponse(404, 'User not found')
       }
 
+      autoPersist()
       const { ...userWithoutPassword } = updatedUser
       return HttpResponse.json(userWithoutPassword)
     }),

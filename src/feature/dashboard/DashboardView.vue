@@ -15,6 +15,7 @@ const {
   dayStore,
   ongoingInterval,
   intervalsForList,
+  sortedDays,
   onActivityPressed,
   onStopPressed,
 } = useDashboard()
@@ -110,10 +111,10 @@ const {
           {{ dayStore.error }}
         </div>
 
-        <div v-else-if="dayStore.days.length === 0" class="empty">No days available.</div>
+        <div v-else-if="sortedDays.length === 0" class="empty">No days available.</div>
 
         <div v-else class="days-list">
-          <DayItem v-for="day in dayStore.days" :key="day.id" :day="day" />
+          <DayItem v-for="day in sortedDays" :key="day.id" :day="day" />
         </div>
       </div>
     </div>
