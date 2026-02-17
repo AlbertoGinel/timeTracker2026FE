@@ -5,6 +5,7 @@ import { useActivityStore } from '@/store/useActivityStore'
 import { useStampStore } from '@/store/useStampStore'
 import { useIntervalStore } from '@/store/useIntervalStore'
 import { useDayStore } from '@/store/useDayStore'
+import { useRegimeStore } from '@/store/useRegimeStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useBundleService } from '@/service/useBundleService'
 
@@ -15,6 +16,7 @@ export const useDashboard = () => {
   const stampStore = useStampStore()
   const intervalStore = useIntervalStore()
   const dayStore = useDayStore()
+  const regimeStore = useRegimeStore()
   const authStore = useAuthStore()
   const bundleService = useBundleService()
 
@@ -67,6 +69,7 @@ export const useDashboard = () => {
     stampStore,
     intervalStore,
     dayStore,
+    regimeStore,
     ongoingInterval,
     intervalsForList,
     sortedDays,

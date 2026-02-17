@@ -1,13 +1,20 @@
 import { DateTime } from 'luxon'
-import type { Day, DayInterval, DayActivityTotal, ActivitySummary } from '@/type/mainTypes'
+import type {
+  Day,
+  DayInterval,
+  DayActivityTotal,
+  ActivitySummary,
+  RegimeSummary,
+} from '@/type/mainTypes'
 import type { DayDB } from '../DBTypes'
 
 /**
- * Serialize a DayDB record to a Day (populate activity objects and compute day boundaries)
+ * Serialize a DayDB record to a Day (populate activity and regime objects)
  */
 export const serializeDay = (
   dayDB: DayDB,
   getActivity: (activityId: string) => ActivitySummary | null,
+  getRegime: (regimeId: string) => RegimeSummary | null,
 ): Day | null => {
   // Compute day boundaries from dateKey + timezone
   const dayStart = DateTime.fromISO(dayDB.dateKey, { zone: dayDB.timezone }).startOf('day')
@@ -52,11 +59,15 @@ export const serializeDay = (
     })
     .filter((t): t is DayActivityTotal => t !== null)
 
+  // Populate regime data
+  const regime = dayDB.regimeId ? getRegime(dayDB.regimeId) : null
+
   return {
     id: dayDB.id,
     user: dayDB.user,
     timezone: dayDB.timezone,
     dateKey: dayDB.dateKey,
+    regime,
     dayStartUtc,
     dayEndUtc,
     dayLengthMs,

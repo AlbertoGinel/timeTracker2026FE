@@ -1,6 +1,7 @@
 import { DateTime } from 'luxon'
 import type { Stamp, Day, DayInterval, DayActivityTotal, ActivityInfo } from '@/type/mainTypes'
 import { computeIntervalsFromStamps } from './intervalService'
+import { calculateActivityPoints } from './calculatePointsService'
 
 /**
  * Split an interval at midnight boundaries in the given timezone
@@ -143,11 +144,11 @@ export const computeDaysFromStamps = (
 
     const activityTotals: DayActivityTotal[] = Array.from(activityMap.entries()).map(
       ([activityId, data]) => {
-        // Calculate billable duration (subtract free seconds from total)
-        const totalSeconds = data.durationMs / 1000
-        const billableSeconds = Math.max(0, totalSeconds - data.secondsFree)
-        const billableHours = billableSeconds / (60 * 60)
-        const pointsTotal = billableHours * data.pointsPerHour
+        const pointsTotal = calculateActivityPoints(
+          data.durationMs,
+          data.pointsPerHour,
+          data.secondsFree,
+        )
 
         return {
           activityId,
@@ -177,6 +178,7 @@ export const computeDaysFromStamps = (
       user: userId,
       timezone,
       dateKey,
+      regime: null, // No regime assigned yet for computed days
       dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
       dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
       dayLengthMs: dayEnd.toMillis() - dayStart.toMillis(),
@@ -208,6 +210,7 @@ export const generateEmptyDay = (dateKey: string, userId: string, timezone: stri
     user: userId,
     timezone,
     dateKey,
+    regime: null, // No regime assigned yet
     dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
     dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
     dayLengthMs: dayEnd.toMillis() - dayStart.toMillis(),

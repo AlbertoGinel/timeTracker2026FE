@@ -1,8 +1,8 @@
-import type { UserDB, ActivityDB, StampDB, DayDB } from './DBTypes'
+import type { UserDB, ActivityDB, StampDB, DayDB, RegimeDB } from './DBTypes'
 import type { Session } from '@/type/mainTypes'
 
 const DB_NAME = 'TimeTrackerMockDB'
-const DB_VERSION = 1
+const DB_VERSION = 2
 
 // Store names match our MSW factory stores
 const STORES = {
@@ -10,6 +10,7 @@ const STORES = {
   activities: 'activities',
   stamps: 'stamps',
   days: 'days',
+  regimes: 'regimes',
   sessions: 'sessions',
 } as const
 
@@ -18,6 +19,7 @@ export type IndexedDBData = {
   activities: ActivityDB[]
   stamps: StampDB[]
   days: DayDB[]
+  regimes: RegimeDB[]
   sessions: Session[]
 }
 
@@ -46,6 +48,9 @@ const openDB = (): Promise<IDBDatabase> => {
       }
       if (!db.objectStoreNames.contains(STORES.days)) {
         db.createObjectStore(STORES.days, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(STORES.regimes)) {
+        db.createObjectStore(STORES.regimes, { keyPath: 'id' })
       }
       if (!db.objectStoreNames.contains(STORES.sessions)) {
         db.createObjectStore(STORES.sessions, { keyPath: 'token' })
@@ -129,19 +134,20 @@ export const loadFromIndexedDB = async (): Promise<IndexedDBData> => {
   const db = await openDB()
 
   try {
-    const [users, activities, stamps, days, sessions] = await Promise.all([
+    const [users, activities, stamps, days, regimes, sessions] = await Promise.all([
       getAllFromStore<UserDB>(db, STORES.users),
       getAllFromStore<ActivityDB>(db, STORES.activities),
       getAllFromStore<StampDB>(db, STORES.stamps),
       getAllFromStore<DayDB>(db, STORES.days),
+      getAllFromStore<RegimeDB>(db, STORES.regimes),
       getAllFromStore<Session>(db, STORES.sessions),
     ])
 
     console.log(
-      `📦 IndexedDB: Loaded ${users.length} users, ${activities.length} activities, ${stamps.length} stamps, ${days.length} days, ${sessions.length} sessions`,
+      `📦 IndexedDB: Loaded ${users.length} users, ${activities.length} activities, ${stamps.length} stamps, ${days.length} days, ${regimes.length} regimes, ${sessions.length} sessions`,
     )
 
-    return { users, activities, stamps, days, sessions }
+    return { users, activities, stamps, days, regimes, sessions }
   } finally {
     db.close()
   }
@@ -159,11 +165,12 @@ export const saveToIndexedDB = async (data: IndexedDBData): Promise<void> => {
       putAllToStore(db, STORES.activities, data.activities),
       putAllToStore(db, STORES.stamps, data.stamps),
       putAllToStore(db, STORES.days, data.days),
+      putAllToStore(db, STORES.regimes, data.regimes),
       putAllToStore(db, STORES.sessions, data.sessions),
     ])
 
     console.log(
-      `📦 IndexedDB: Saved ${data.users.length} users, ${data.activities.length} activities, ${data.stamps.length} stamps, ${data.days.length} days, ${data.sessions.length} sessions`,
+      `📦 IndexedDB: Saved ${data.users.length} users, ${data.activities.length} activities, ${data.stamps.length} stamps, ${data.days.length} days, ${data.regimes.length} regimes, ${data.sessions.length} sessions`,
     )
   } finally {
     db.close()
@@ -182,6 +189,7 @@ export const clearIndexedDB = async (): Promise<void> => {
       clearStore(db, STORES.activities),
       clearStore(db, STORES.stamps),
       clearStore(db, STORES.days),
+      clearStore(db, STORES.regimes),
       clearStore(db, STORES.sessions),
     ])
 

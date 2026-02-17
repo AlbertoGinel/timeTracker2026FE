@@ -3,6 +3,7 @@ import { useActivityStore } from '@/store/useActivityStore'
 import { useStampStore } from '@/store/useStampStore'
 import { useIntervalStore } from '@/store/useIntervalStore'
 import { useDayStore } from '@/store/useDayStore'
+import { useRegimeStore } from '@/store/useRegimeStore'
 import { useAuthStore } from '@/store/useAuthStore'
 
 /**
@@ -14,6 +15,7 @@ export const useBundleService = () => {
   const stampStore = useStampStore()
   const intervalStore = useIntervalStore()
   const dayStore = useDayStore()
+  const regimeStore = useRegimeStore()
   const authStore = useAuthStore()
 
   /**
@@ -28,10 +30,11 @@ export const useBundleService = () => {
 
       // Calculate date range: 7 days before and 7 days after today
       const today = DateTime.now().setZone(user.timezone)
-      const fromDate = today.minus({ days: 7 }).toISODate()!
-      const toDate = today.plus({ days: 7 }).toISODate()!
+      const fromDate = today.minus({ days: 30 }).toISODate()!
+      const toDate = today.plus({ days: 30 }).toISODate()!
 
       await Promise.all([
+        regimeStore.fetchRegimes(),
         activityStore.fetchActivities(),
         stampStore.fetchStamps(),
         intervalStore.fetchIntervals(),
@@ -47,6 +50,7 @@ export const useBundleService = () => {
    * Clear all user data - called on logout
    */
   const clearUserBundle = (): void => {
+    regimeStore.clearRegimes()
     activityStore.clearActivities()
     stampStore.clearStamps()
     intervalStore.clearIntervals()

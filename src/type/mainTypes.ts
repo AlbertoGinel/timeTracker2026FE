@@ -81,6 +81,7 @@ export type Day = {
   user: string
   timezone: string
   dateKey: string
+  regime: RegimeSummary | null // Populated regime summary, null if no regime assigned
   dayStartUtc: string
   dayEndUtc: string
   dayLengthMs: number
@@ -94,3 +95,32 @@ export type Day = {
   createdAt: string
   updatedAt: string
 }
+
+// Regime types (24-hour model days created by user)
+
+export type RegimeInterval = {
+  intervalId: string
+  activityId: string
+  activity: ActivitySummary // Populated from activities table
+  startTime: string // HH:mm format (e.g., "09:00")
+  endTime: string // HH:mm format (e.g., "17:00")
+  durationMs: number
+}
+
+export type Regime = {
+  id: string
+  user: string
+  icon: string // Emoji icon for the regime (e.g., "💼", "🏖️", "🌅")
+  name: string // "workday", "holidays", "midday", "softday", "epicday", etc.
+  isHoliday: boolean // true for holiday regimes (no stamps, not counted in weeks/months/years)
+  intervals: RegimeInterval[]
+  totalPoints: number // calculated points for this 24h model
+  totalDurationMs: number // total duration of all intervals
+  createdAt: string
+  updatedAt: string
+}
+
+export type RegimeSummary = Pick<
+  Regime,
+  'id' | 'icon' | 'name' | 'isHoliday' | 'totalPoints' | 'totalDurationMs'
+>

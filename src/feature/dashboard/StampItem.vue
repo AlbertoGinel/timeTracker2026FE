@@ -12,7 +12,9 @@ const authStore = useAuthStore()
 
 const formattedTime = computed(() => {
   const zone = authStore.currentUser?.timezone ?? 'UTC'
-  return DateTime.fromISO(props.stamp.timestamp, { zone }).toFormat('LLL dd, HH:mm')
+  return DateTime.fromISO(props.stamp.timestamp, { zone: 'utc' })
+    .setZone(zone)
+    .toFormat('LLL dd, HH:mm')
 })
 
 const isStop = computed(() => props.stamp.type === 'stop')

@@ -31,11 +31,11 @@ export type StampDB = {
   activity_id: string | undefined
 }
 
-export type DayIntervalDB = {
+export type IntervalDB = {
   intervalId: string
   activityId: string
-  startLocal: string
-  endLocal: string
+  startTime: string // For regimes: "HH:mm" format. For days: ISO timestamp
+  endTime: string // For regimes: "HH:mm" format. For days: ISO timestamp
   durationMs: number
 }
 
@@ -46,12 +46,26 @@ export type DayActivityTotalDB = {
   pointsPerHourSnapshot: number
 }
 
+export type RegimeDB = {
+  id: string
+  user: string
+  icon: string
+  name: string // "workday", "holidays", "midday", "softday", "epicday", etc.
+  isHoliday: boolean // true for holiday regimes (no stamps, not counted in weeks/months/years)
+  intervals: IntervalDB[]
+  totalPoints: number // calculated points for this 24h model
+  totalDurationMs: number // total duration of all intervals
+  createdAt: string
+  updatedAt: string
+}
+
 export type DayDB = {
   id: string
   user: string
   timezone: string
   dateKey: string
-  intervals: DayIntervalDB[]
+  regimeId: string | undefined
+  intervals: IntervalDB[]
   activityTotals: DayActivityTotalDB[]
   totalDurationMs: number
   totalPoints: number
