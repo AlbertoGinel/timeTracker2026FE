@@ -30,6 +30,13 @@ const hasData = computed(() => {
   <div class="day-item" :class="{ 'day-item--empty': !hasData }">
     <div class="day-header">
       <span class="day-date">📅 {{ formattedDate }}</span>
+      <span
+        v-if="day.regime && day.percentageAchieved !== null && day.achievedLevel"
+        class="day-achievement"
+        :style="{ color: day.achievedLevel.color }"
+      >
+        {{ day.regime.icon }}{{ day.percentageAchieved.toFixed(0) }}%{{ day.achievedLevel.icon }}
+      </span>
     </div>
     <div v-if="hasData" class="day-content">
       <div class="day-stat">
@@ -86,12 +93,24 @@ const hasData = computed(() => {
 
 .day-header {
   margin-bottom: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .day-date {
   font-size: 0.9rem;
   font-weight: 600;
   color: #333;
+}
+
+.day-achievement {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.6);
+  text-transform: capitalize;
 }
 
 .day-content {

@@ -13,28 +13,52 @@
           class="calendar-cell"
           :class="{
             'is-today': cell.isToday,
+            'has-regime': cell.regimeIcon,
+          }"
+          :style="{
+            backgroundColor:
+              !cell.isFuture && cell.achievedLevelColor
+                ? hexToRgba(cell.achievedLevelColor, 0.5)
+                : undefined,
           }"
           @click="handleCellClick(cell)"
         >
-          <!-- Day Number with Month Label in top left corner -->
-          <div class="day-number">
-            <span v-if="cell.monthLabel" class="month-label"
-              >{{ cell.dayNumber }} {{ cell.monthLabel }}</span
-            >
-            <span v-else>{{ cell.dayNumber }}</span>
+          <!-- Top row: Day Number with Month Label AND Regime Icon -->
+          <div class="top-row">
+            <div class="day-number">
+              <span v-if="cell.monthLabel" class="month-label"
+                >{{ cell.dayNumber }} {{ cell.monthLabel }}</span
+              >
+              <span v-else>{{ cell.dayNumber }}</span>
+            </div>
+            <div v-if="cell.regimeIcon" class="regime-icon-top">
+              {{ cell.regimeIcon }}
+            </div>
           </div>
 
-          <!-- Regime Info -->
-          <div v-if="cell.regimeIcon && cell.regimeName" class="regime-info">
-            <span class="regime-icon">{{ cell.regimeIcon }}</span>
+          <!-- Achievement row: percentage + achievement icon -->
+          <div
+            v-if="cell.percentageAchieved !== null && cell.achievedLevelIcon"
+            class="achievement-row"
+          >
+            <span class="percentage">{{ Math.round(cell.percentageAchieved) }}%</span>
+            <span class="achievement-icon" :style="{ color: cell.achievedLevelColor || '#333' }">{{
+              cell.achievedLevelIcon
+            }}</span>
+          </div>
+
+          <!-- Regime name fallback for future days or days without percentage -->
+          <div v-else-if="cell.regimeIcon && cell.regimeName" class="regime-name-row">
             <span class="regime-name">{{ cell.regimeName }}</span>
           </div>
-          <div v-else-if="cell.day && !cell.regimeIcon" class="regime-info">
+
+          <!-- No regime indicator -->
+          <div v-else-if="cell.day && !cell.regimeIcon" class="no-regime-row">
             <span class="no-regime">No Regime</span>
           </div>
 
           <!-- Points with Star Icon -->
-          <div v-if="cell.points > 0" class="points-info">
+          <div v-if="cell.day && !cell.isFuture && !cell.isHoliday" class="points-info">
             <span class="star-icon">⭐</span>
             <span class="points">{{ cell.points }}</span>
           </div>
@@ -55,6 +79,21 @@ const authStore = useAuthStore()
 const timezone = computed(() => authStore.currentUser?.timezone || 'UTC')
 
 const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
+
+// Convert hex color to rgba with opacity
+const hexToRgba = (hex: string | null, opacity: number): string => {
+  if (!hex) return 'transparent'
+
+  // Remove # if present
+  hex = hex.replace('#', '')
+
+  // Parse hex values
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`
+}
 </script>
 
 <style scoped>
@@ -89,7 +128,7 @@ const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
   position: relative;
   cursor: pointer;
   background-color: #fafafa;
-  gap: 2px;
+  gap: 0px;
   box-sizing: border-box;
 }
 
@@ -97,12 +136,20 @@ const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
   box-shadow: inset 0 0 0 3px #4a90e2;
 }
 
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1px;
+}
+
 .day-number {
   font-size: 10px;
   font-weight: 600;
   color: #333;
-  width: 100%;
   text-align: left;
+  line-height: 1;
 }
 
 .month-label {
@@ -111,16 +158,35 @@ const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
   letter-spacing: 0.3px;
 }
 
-.regime-info {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  width: 100%;
+.regime-icon-top {
+  font-size: 14px;
+  line-height: 1;
 }
 
-.regime-icon {
+.achievement-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  margin-bottom: 1px;
+}
+
+.percentage {
+  font-size: 10px;
+  color: #333;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.achievement-icon {
   font-size: 12px;
   line-height: 1;
+}
+
+.regime-name-row {
+  display: flex;
+  width: 100%;
+  margin-bottom: 1px;
 }
 
 .regime-name {
@@ -130,7 +196,12 @@ const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  flex: 1;
+}
+
+.no-regime-row {
+  display: flex;
+  width: 100%;
+  margin-bottom: 1px;
 }
 
 .no-regime {
@@ -145,6 +216,7 @@ const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
   align-items: center;
   gap: 2px;
   width: 100%;
+  margin-top: auto;
 }
 
 .star-icon {

@@ -36,8 +36,8 @@ export const serializeDay = (
         intervalId: interval.intervalId,
         activityId: interval.activityId,
         activity,
-        startLocal: interval.startLocal,
-        endLocal: interval.endLocal,
+        startLocal: interval.startTime, // startTime is ISO timestamp for days
+        endLocal: interval.endTime, // endTime is ISO timestamp for days
         durationMs: interval.durationMs,
       }
     })
@@ -77,7 +77,9 @@ export const serializeDay = (
     activityTotals,
     totalDurationMs: dayDB.totalDurationMs,
     totalPoints: dayDB.totalPoints,
-    isFinalized: dayDB.isFinalized,
+    percentageAchieved: dayDB.percentageAchieved,
+    achievedLevel: dayDB.achievedLevel,
+    isShelved: dayDB.isShelved,
     createdAt: dayDB.createdAt,
     updatedAt: dayDB.updatedAt,
   }

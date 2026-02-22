@@ -29,6 +29,11 @@ export const useIntervalStore = defineStore('interval', {
       }
     },
 
+    loadFromBundle(intervals: Interval[]): void {
+      this.intervals = intervals
+      this.error = null
+    },
+
     clearIntervals() {
       this.intervals = []
       this.error = null

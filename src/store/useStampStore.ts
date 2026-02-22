@@ -34,6 +34,11 @@ export const useStampStore = defineStore('stamp', {
       }
     },
 
+    loadFromBundle(stamps: StampWithActivity[]): void {
+      this.stamps = stamps
+      this.error = null
+    },
+
     async createStamp(stamp: Omit<Stamp, 'id' | 'user'>): Promise<StampWithActivity | null> {
       this.isLoading = true
       this.error = null

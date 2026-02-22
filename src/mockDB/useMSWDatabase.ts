@@ -1,14 +1,131 @@
-import { factory, primaryKey } from '@mswjs/data'
+import { factory, primaryKey, nullable } from '@mswjs/data'
 import type { Session } from '@/type/mainTypes'
 import { seedStamps } from './useSeedStamps'
+import { seedDays } from './useSeedDays'
 import {
   isIndexedDBInitialized,
   loadFromIndexedDB,
   saveToIndexedDB,
   type IndexedDBData,
 } from './useIndexedDB'
-import type { UserDB, ActivityDB, StampDB, DayDB, RegimeDB, IntervalDB } from './DBTypes'
+import type {
+  UserDB,
+  ActivityDB,
+  StampDB,
+  DayDB,
+  RegimeDB,
+  IntervalDB,
+  ScaleLevelDB,
+} from './DBTypes'
 import { calculateRegimeIntervalDuration, calculateRegimeMetrics } from './services/regimeService'
+
+// Default scale for new users (balanced)
+export const DEFAULT_SCALE: ScaleLevelDB[] = [
+  {
+    name: 'perfect',
+    color: '#FFD700',
+    icon: '⭐',
+    percent: 95,
+  },
+  {
+    name: 'good',
+    color: '#00FF00',
+    icon: '✅',
+    percent: 74,
+  },
+  {
+    name: 'mediocre',
+    color: '#FFA500',
+    icon: '➖',
+    percent: 52,
+  },
+  {
+    name: 'bad',
+    color: '#FF0000',
+    icon: '❌',
+    percent: 31,
+  },
+  {
+    name: 'terrible',
+    color: '#000000',
+    icon: '💀',
+    percent: 10,
+  },
+]
+
+// Strict scale (harder to achieve good ratings) - 4 levels
+const STRICT_SCALE: ScaleLevelDB[] = [
+  {
+    name: 'excellent',
+    color: '#9b59b6',
+    icon: '👑',
+    percent: 98,
+  },
+  {
+    name: 'great',
+    color: '#3498db',
+    icon: '💎',
+    percent: 90,
+  },
+  {
+    name: 'decent',
+    color: '#f39c12',
+    icon: '⚡',
+    percent: 75,
+  },
+  {
+    name: 'weak',
+    color: '#e74c3c',
+    icon: '⚠️',
+    percent: 60,
+  },
+]
+
+// Lenient scale (easier to achieve good ratings) - 7 levels
+const LENIENT_SCALE: ScaleLevelDB[] = [
+  {
+    name: 'amazing',
+    color: '#FF69B4',
+    icon: '🎉',
+    percent: 85,
+  },
+  {
+    name: 'great',
+    color: '#32CD32',
+    icon: '😊',
+    percent: 70,
+  },
+  {
+    name: 'good',
+    color: '#4169E1',
+    icon: '👍',
+    percent: 60,
+  },
+  {
+    name: 'okay',
+    color: '#FFD700',
+    icon: '🙂',
+    percent: 50,
+  },
+  {
+    name: 'trying',
+    color: '#FFA07A',
+    icon: '💪',
+    percent: 40,
+  },
+  {
+    name: 'starting',
+    color: '#B0C4DE',
+    icon: '🌱',
+    percent: 25,
+  },
+  {
+    name: 'beginning',
+    color: '#A9A9A9',
+    icon: '🐣',
+    percent: 10,
+  },
+]
 
 // Create the database, Define database schema
 export const db = factory({
@@ -19,6 +136,7 @@ export const db = factory({
     nickname: String,
     role: String,
     timezone: String,
+    scale: Array,
   },
   activity: {
     id: primaryKey(String),
@@ -36,19 +154,21 @@ export const db = factory({
     timestamp: String,
     user: String,
     type: String,
-    activity_id: String,
+    activity_id: nullable(String),
   },
   day: {
     id: primaryKey(String),
     user: String,
     timezone: String,
     dateKey: String,
-    regimeId: String,
+    regimeId: nullable(String),
     intervals: Array,
     activityTotals: Array,
     totalDurationMs: Number,
     totalPoints: Number,
-    isFinalized: Boolean,
+    percentageAchieved: nullable(Number),
+    achievedLevel: nullable(Object),
+    isShelved: Boolean,
     createdAt: String,
     updatedAt: String,
   },
@@ -158,6 +278,7 @@ export const initializeDatabase = async () => {
       nickname: 'John',
       role: 'admin',
       timezone: 'Europe/Tallinn',
+      scale: DEFAULT_SCALE, // Balanced scale
     })
 
     const user2 = db.user.create({
@@ -167,6 +288,7 @@ export const initializeDatabase = async () => {
       nickname: 'Jane',
       role: 'regular',
       timezone: 'Europe/Tallinn',
+      scale: STRICT_SCALE, // Strict scale - harder to achieve
     })
 
     const user3 = db.user.create({
@@ -176,6 +298,7 @@ export const initializeDatabase = async () => {
       nickname: 'Bob',
       role: 'regular',
       timezone: 'Europe/Tallinn',
+      scale: LENIENT_SCALE, // Lenient scale - easier to achieve
     })
 
     // Create activities for each user
@@ -218,6 +341,18 @@ export const initializeDatabase = async () => {
       user: user1.id,
     })
 
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#EF4444',
+      name: 'Social Media',
+      icon: '📱',
+      points_per_hour: -60,
+      seconds_free: 1800,
+      created_at: now,
+      updated_at: now,
+      user: user1.id,
+    })
+
     // Jane's activities
     const janeWriting = db.activity.create({
       id: crypto.randomUUID(),
@@ -255,12 +390,24 @@ export const initializeDatabase = async () => {
       user: user2.id,
     })
 
-    // Bob's activities
-    const bobGaming = db.activity.create({
+    db.activity.create({
       id: crypto.randomUUID(),
-      color: '#EF4444',
-      name: 'Gaming',
-      icon: '🎮',
+      color: '#DC2626',
+      name: 'Procrastinating',
+      icon: '😴',
+      points_per_hour: -50,
+      seconds_free: 2400,
+      created_at: now,
+      updated_at: now,
+      user: user2.id,
+    })
+
+    // Bob's activities
+    const bobWorking = db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#EFAA44',
+      name: 'Working',
+      icon: '💼',
       points_per_hour: 50,
       seconds_free: 3600,
       created_at: now,
@@ -287,6 +434,18 @@ export const initializeDatabase = async () => {
       icon: '🎵',
       points_per_hour: 65,
       seconds_free: 2100,
+      created_at: now,
+      updated_at: now,
+      user: user3.id,
+    })
+
+    db.activity.create({
+      id: crypto.randomUUID(),
+      color: '#B91C1C',
+      name: 'Gaming',
+      icon: '🎮',
+      points_per_hour: -40,
+      seconds_free: 3000,
       created_at: now,
       updated_at: now,
       user: user3.id,
@@ -511,7 +670,7 @@ export const initializeDatabase = async () => {
     const bobSocialdayIntervals: IntervalDB[] = [
       {
         intervalId: crypto.randomUUID(),
-        activityId: bobGaming.id,
+        activityId: bobWorking.id,
         startTime: '10:00',
         endTime: '13:00',
         durationMs: calculateRegimeIntervalDuration('10:00', '13:00'),
@@ -525,7 +684,7 @@ export const initializeDatabase = async () => {
       },
       {
         intervalId: crypto.randomUUID(),
-        activityId: bobGaming.id,
+        activityId: bobWorking.id,
         startTime: '15:00',
         endTime: '18:00',
         durationMs: calculateRegimeIntervalDuration('15:00', '18:00'),
@@ -592,6 +751,9 @@ export const initializeDatabase = async () => {
 
     seedStamps(db, { monthsBack: 6 })
 
+    // Seed days (materialized days with regimes)
+    seedDays(db)
+
     // Cleanup expired sessions
     sessionStorage.cleanup()
 
@@ -604,7 +766,9 @@ export const initializeDatabase = async () => {
       db.regime.count(),
       'regimes,',
       db.stamp.count(),
-      'stamps',
+      'stamps,',
+      db.day.count(),
+      'days',
     )
 
     // Save the seeded data to IndexedDB for persistence

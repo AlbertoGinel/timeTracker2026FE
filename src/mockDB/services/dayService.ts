@@ -2,6 +2,8 @@ import { DateTime } from 'luxon'
 import type { Stamp, Day, DayInterval, DayActivityTotal, ActivityInfo } from '@/type/mainTypes'
 import { computeIntervalsFromStamps } from './intervalService'
 import { calculateActivityPoints } from './calculatePointsService'
+import { calculateDayAchievement } from './scaleService'
+import type { ScaleLevelDB } from '../DBTypes'
 
 /**
  * Split an interval at midnight boundaries in the given timezone
@@ -174,11 +176,11 @@ export const computeDaysFromStamps = (
     const dayEnd = dayStart.plus({ days: 1 })
 
     days.push({
-      id: `${userId}:${dateKey}`,
+      id: null, // null for computed days (not materialized in DB)
       user: userId,
       timezone,
       dateKey,
-      regime: null, // No regime assigned yet for computed days
+      regime: null, // null for computed days (not materialized in DB)
       dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
       dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
       dayLengthMs: dayEnd.toMillis() - dayStart.toMillis(),
@@ -188,9 +190,11 @@ export const computeDaysFromStamps = (
       activityTotals,
       totalDurationMs,
       totalPoints,
-      isFinalized: false,
-      createdAt: DateTime.now().toISO()!,
-      updatedAt: DateTime.now().toISO()!,
+      percentageAchieved: null, // null for computed days (no regime to compare against)
+      achievedLevel: null, // null for computed days (no regime to compare against)
+      isShelved: null, // null for computed days (not materialized in DB)
+      createdAt: null, // null for computed days (not materialized in DB)
+      updatedAt: null, // null for computed days (not materialized in DB)
     })
   })
 
@@ -206,11 +210,11 @@ export const generateEmptyDay = (dateKey: string, userId: string, timezone: stri
   const dayEnd = dayStart.plus({ days: 1 })
 
   return {
-    id: `${userId}:${dateKey}`,
+    id: null, // null for computed days (not materialized in DB)
     user: userId,
     timezone,
     dateKey,
-    regime: null, // No regime assigned yet
+    regime: null, // null for computed days (not materialized in DB)
     dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
     dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
     dayLengthMs: dayEnd.toMillis() - dayStart.toMillis(),
@@ -220,8 +224,180 @@ export const generateEmptyDay = (dateKey: string, userId: string, timezone: stri
     activityTotals: [],
     totalDurationMs: 0,
     totalPoints: 0,
-    isFinalized: false,
-    createdAt: DateTime.now().toISO()!,
-    updatedAt: DateTime.now().toISO()!,
+    percentageAchieved: null, // null for computed days (no regime to compare against)
+    achievedLevel: null, // null for computed days (no regime to compare against)
+    isShelved: null, // null for computed days (not materialized in DB)
+    createdAt: null, // null for computed days (not materialized in DB)
+    updatedAt: null, // null for computed days (not materialized in DB)
   }
+}
+
+/**
+ * Merge materialized days from DB with computed days from stamps
+ * Handles three cases:
+ * 1. Shelved days (use frozen data from DB)
+ * 2. Materialized days with stamps (merge DB fields with fresh computed data)
+ * 3. Materialized days without stamps (future planned days, use DB fields + empty data)
+ */
+export const mergeMaterializedAndComputedDays = (
+  materializedDaysDB: import('../DBTypes').DayDB[],
+  computedDays: Day[],
+  getActivity: (activityId: string) => ActivityInfo | null,
+  getRegime: (regimeId: string) => {
+    id: string
+    icon: string
+    name: string
+    isHoliday: boolean
+    totalPoints: number
+    totalDurationMs: number
+  } | null,
+  userScale: ScaleLevelDB[],
+): Day[] => {
+  // Create a map of computed days for quick lookup
+  const computedDayMap = new Map(computedDays.map((d) => [d.dateKey, d]))
+
+  // Process materialized days (includes future days with regimes)
+  const materializedDays: Day[] = materializedDaysDB.map((dbDay) => {
+    const regime = dbDay.regimeId ? getRegime(dbDay.regimeId) : null
+    const computedDay = computedDayMap.get(dbDay.dateKey)
+
+    // Remove from computed map so we don't duplicate later
+    if (computedDay) {
+      computedDayMap.delete(dbDay.dateKey)
+    }
+
+    // Check if day is shelved AND has frozen data in DB
+    const isShelvedWithData = dbDay.isShelved && dbDay.intervals.length > 0
+
+    if (isShelvedWithData) {
+      // Case 1: Shelved day - use frozen data from DB
+      const intervals = dbDay.intervals
+        .map((interval) => {
+          const activity = getActivity(interval.activityId)
+          if (!activity) return null
+          return {
+            intervalId: interval.intervalId,
+            activityId: interval.activityId,
+            activity: {
+              id: activity.id,
+              name: activity.name,
+              color: activity.color,
+              icon: activity.icon,
+            },
+            startLocal: interval.startTime,
+            endLocal: interval.endTime,
+            durationMs: interval.durationMs ?? 0,
+          }
+        })
+        .filter((i) => i !== null)
+
+      const activityTotals = dbDay.activityTotals
+        .map((total) => {
+          const activity = getActivity(total.activityId)
+          if (!activity) return null
+          return {
+            activityId: total.activityId,
+            activity: {
+              id: activity.id,
+              name: activity.name,
+              color: activity.color,
+              icon: activity.icon,
+            },
+            durationMs: total.durationMs ?? 0,
+            pointsTotal: total.pointsTotal ?? 0,
+            pointsPerHourSnapshot: total.pointsPerHourSnapshot,
+          }
+        })
+        .filter((t) => t !== null)
+
+      const dayStart = DateTime.fromISO(dbDay.dateKey, { zone: dbDay.timezone }).startOf('day')
+      const dayEnd = dayStart.plus({ days: 1 })
+      const dayLengthMs = dayEnd.toMillis() - dayStart.toMillis()
+
+      // Calculate achieved level and percentage based on regime points with DST correction
+      const achievement = calculateDayAchievement(
+        dbDay.totalPoints ?? 0,
+        regime?.totalPoints,
+        dayLengthMs,
+        userScale,
+      )
+
+      return {
+        id: dbDay.id,
+        user: dbDay.user,
+        timezone: dbDay.timezone,
+        dateKey: dbDay.dateKey,
+        regime,
+        dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
+        dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
+        dayLengthMs,
+        timezoneOffsetStart: dayStart.offset,
+        timezoneOffsetEnd: dayEnd.offset,
+        intervals,
+        activityTotals,
+        totalDurationMs: dbDay.totalDurationMs ?? 0,
+        totalPoints: dbDay.totalPoints ?? 0,
+        percentageAchieved: achievement.percentageAchieved,
+        achievedLevel: achievement.achievedLevel,
+        isShelved: dbDay.isShelved,
+        createdAt: dbDay.createdAt,
+        updatedAt: dbDay.updatedAt,
+      } as Day
+    } else if (computedDay) {
+      // Case 2: Materialized day with stamps - merge DB fields with fresh computed data
+      // Calculate achieved level and percentage based on regime points with DST correction
+      const achievement = calculateDayAchievement(
+        computedDay.totalPoints,
+        regime?.totalPoints,
+        computedDay.dayLengthMs,
+        userScale,
+      )
+
+      return {
+        ...computedDay,
+        id: dbDay.id,
+        regime,
+        percentageAchieved: achievement.percentageAchieved,
+        achievedLevel: achievement.achievedLevel,
+        isShelved: dbDay.isShelved,
+        createdAt: dbDay.createdAt,
+        updatedAt: dbDay.updatedAt,
+      } as Day
+    } else {
+      // Case 3: Materialized day without stamps (future planned day or holiday)
+      const dayStart = DateTime.fromISO(dbDay.dateKey, { zone: dbDay.timezone }).startOf('day')
+      const dayEnd = dayStart.plus({ days: 1 })
+      const dayLengthMs = dayEnd.toMillis() - dayStart.toMillis()
+
+      // No points earned yet, calculate based on 0 points with DST correction
+      const achievement = calculateDayAchievement(0, regime?.totalPoints, dayLengthMs, userScale)
+
+      return {
+        id: dbDay.id,
+        user: dbDay.user,
+        timezone: dbDay.timezone,
+        dateKey: dbDay.dateKey,
+        regime,
+        dayStartUtc: dayStart.toUTC().toISO({ suppressMilliseconds: true })!,
+        dayEndUtc: dayEnd.toUTC().toISO({ suppressMilliseconds: true })!,
+        dayLengthMs,
+        timezoneOffsetStart: dayStart.offset,
+        timezoneOffsetEnd: dayEnd.offset,
+        intervals: [],
+        activityTotals: [],
+        totalDurationMs: 0,
+        totalPoints: 0,
+        percentageAchieved: achievement.percentageAchieved,
+        achievedLevel: achievement.achievedLevel,
+        isShelved: dbDay.isShelved,
+        createdAt: dbDay.createdAt,
+        updatedAt: dbDay.updatedAt,
+      } as Day
+    }
+  })
+
+  // Add remaining computed days (not materialized in DB)
+  const remainingComputedDays = Array.from(computedDayMap.values())
+
+  return [...materializedDays, ...remainingComputedDays]
 }

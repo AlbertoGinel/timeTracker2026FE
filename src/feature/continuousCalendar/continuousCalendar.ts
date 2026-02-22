@@ -8,10 +8,15 @@ export interface CalendarCell {
   dayNumber: number // 1-31
   monthLabel: string | null // "JAN", "FEB", etc. (only for 1st of month)
   isToday: boolean
+  isFuture: boolean
   day: Day | undefined
   regimeIcon: string | null
   regimeName: string | null
+  isHoliday: boolean
   points: number
+  percentageAchieved: number | null
+  achievedLevelIcon: string | null
+  achievedLevelColor: string | null
 }
 
 export function useContinuousCalendar(timezone: string) {
@@ -79,16 +84,22 @@ export function useContinuousCalendar(timezone: string) {
         const regime = dayData?.regime
 
         const dayNum = getDayNumber(dateKey)
+        const isFuture = dateKey > todayDateKey
 
         const cell: CalendarCell = {
           dateKey,
           dayNumber: dayNum,
           monthLabel: dayNum === 1 ? getMonthLabel(dateKey) : null,
           isToday: dateKey === todayDateKey,
+          isFuture,
           day: dayData,
           regimeIcon: regime?.icon || null,
           regimeName: regime?.name || null,
+          isHoliday: regime?.isHoliday || false,
           points: Math.round(dayData?.totalPoints || 0),
+          percentageAchieved: !isFuture ? (dayData?.percentageAchieved ?? null) : null,
+          achievedLevelIcon: !isFuture ? (dayData?.achievedLevel?.icon ?? null) : null,
+          achievedLevelColor: !isFuture ? (dayData?.achievedLevel?.color ?? null) : null,
         }
 
         weekRow.push(cell)

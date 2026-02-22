@@ -45,6 +45,11 @@ export const useRegimeStore = defineStore('regime', {
       }
     },
 
+    loadFromBundle(regimes: Regime[]): void {
+      this.regimes = regimes
+      this.error = null
+    },
+
     async createRegime(
       regime: Omit<
         Regime,

@@ -30,6 +30,11 @@ export const useActivityStore = defineStore('activity', {
       }
     },
 
+    loadFromBundle(activities: Activity[]): void {
+      this.activities = activities
+      this.error = null
+    },
+
     async createActivity(
       activity: Omit<Activity, 'id' | 'created_at' | 'updated_at' | 'user'>,
     ): Promise<Activity | null> {

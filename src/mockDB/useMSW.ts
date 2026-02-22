@@ -7,6 +7,7 @@ import { useStampHandlers } from './handlers/useStampHandlers'
 import { useIntervalHandlers } from './handlers/useIntervalHandlers'
 import { useDayHandlers } from './handlers/useDayHandlers'
 import { useRegimeHandlers } from './handlers/useRegimeHandlers'
+import { useBundleHandlers } from './handlers/useBundleHandlers'
 
 // Extend Window interface for debug utilities
 declare global {
@@ -35,6 +36,7 @@ export const useMSW = () => {
       ...useIntervalHandlers(),
       ...useDayHandlers(),
       ...useRegimeHandlers(),
+      ...useBundleHandlers(),
     ]
 
     // Setup worker

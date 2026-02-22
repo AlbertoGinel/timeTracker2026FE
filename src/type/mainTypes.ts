@@ -1,5 +1,12 @@
 export type UserRole = 'admin' | 'regular'
 
+export type ScaleLevel = {
+  name: string
+  color: string
+  icon: string
+  percent: number
+}
+
 export type User = {
   id: string
   username: string
@@ -7,6 +14,7 @@ export type User = {
   nickname: string
   role: UserRole
   timezone: string
+  scale: ScaleLevel[]
 }
 
 export type Activity = {
@@ -77,11 +85,11 @@ export type DayActivityTotal = {
 }
 
 export type Day = {
-  id: string
+  id: string | null // null if not materialized in DB
   user: string
   timezone: string
   dateKey: string
-  regime: RegimeSummary | null // Populated regime summary, null if no regime assigned
+  regime: RegimeSummary | null // Populated regime summary, null if no regime assigned or not materialized
   dayStartUtc: string
   dayEndUtc: string
   dayLengthMs: number
@@ -91,9 +99,11 @@ export type Day = {
   activityTotals: DayActivityTotal[]
   totalDurationMs: number
   totalPoints: number
-  isFinalized: boolean
-  createdAt: string
-  updatedAt: string
+  percentageAchieved: number | null
+  achievedLevel: ScaleLevel | null
+  isShelved: boolean | null // null if not materialized in DB, false if materialized but not shelved, true if shelved
+  createdAt: string | null // null if not materialized in DB
+  updatedAt: string | null // null if not materialized in DB
 }
 
 // Regime types (24-hour model days created by user)
@@ -124,3 +134,49 @@ export type RegimeSummary = Pick<
   Regime,
   'id' | 'icon' | 'name' | 'isHoliday' | 'totalPoints' | 'totalDurationMs'
 >
+
+// TimeSection types (weeks, months, years aggregated from days)
+
+export type TimeSectionType = 'week' | 'month' | 'year'
+
+export type TimeSectionActivityTotal = {
+  activityId: string
+  activity: ActivitySummary
+  durationMs: number
+  pointsTotal: number
+}
+
+export type TimeSection = {
+  id: string
+  user: string
+  timezone: string
+  sectionType: TimeSectionType
+  sectionKey: string
+  sectionPassed: number
+  startUtc: string
+  endUtc: string
+  lengthMs: number
+  activityTotals: TimeSectionActivityTotal[]
+  totalDurationMs: number
+  totalPoints: number
+  percentageAchieved: number | null
+  achievedLevel: ScaleLevel | null
+  isShelved: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// Bundle type (complete user data snapshot)
+
+export type Bundle = {
+  regimes: Regime[]
+  activities: Activity[]
+  stamps: StampWithActivity[]
+  intervals: Interval[]
+  days: Day[]
+  timeSections: {
+    weeks: TimeSection[]
+    months: TimeSection[]
+    years: TimeSection[]
+  }
+}

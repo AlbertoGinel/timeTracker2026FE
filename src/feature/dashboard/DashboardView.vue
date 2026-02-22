@@ -9,6 +9,7 @@ import IntervalItem from './IntervalItem.vue'
 import OngoinInterval from './OngoinInterval.vue'
 import DayItem from './DayItem.vue'
 import RegimeItem from './RegimeItem.vue'
+import UserItem from './userItem.vue'
 import ContinuousCalendar from '@/feature/continuousCalendar/continuousCalendar.vue'
 
 const authStore = useAuthStore()
@@ -173,7 +174,7 @@ onUnmounted(() => {
           <div v-else-if="sortedDays.length === 0" class="empty">No days available.</div>
 
           <div v-else class="days-list">
-            <DayItem v-for="day in sortedDays" :key="day.id" :day="day" />
+            <DayItem v-for="day in sortedDays" :key="day.dateKey" :day="day" />
           </div>
         </div>
       </div>
@@ -186,9 +187,9 @@ onUnmounted(() => {
       </div>
 
       <div class="grid-item grid-item-extra2">
-        <h2>Extra 2</h2>
+        <h2>User Profile</h2>
         <div class="card">
-          <div class="empty">Extra section 2</div>
+          <UserItem />
         </div>
       </div>
     </div>

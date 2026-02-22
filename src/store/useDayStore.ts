@@ -16,18 +16,13 @@ export const useDayStore = defineStore('day', {
   },
 
   actions: {
-    async fetchDaysInRange(
-      fromDate: string,
-      toDate: string,
-      timezone: string,
-      userId: string,
-    ): Promise<boolean> {
+    async fetchDaysInRange(fromDate: string, toDate: string): Promise<boolean> {
       this.isLoading = true
       this.error = null
 
       try {
         const api = useAPIDay()
-        const days = await api.getDaysInRange(fromDate, toDate, timezone, userId)
+        const days = await api.getDaysInRange(fromDate, toDate)
         this.days = days
         return true
       } catch (err) {
@@ -36,6 +31,11 @@ export const useDayStore = defineStore('day', {
       } finally {
         this.isLoading = false
       }
+    },
+
+    loadFromBundle(days: Day[]): void {
+      this.days = days
+      this.error = null
     },
 
     clearDays() {

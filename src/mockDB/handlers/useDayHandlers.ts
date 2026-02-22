@@ -1,8 +1,9 @@
 import { http, HttpResponse } from 'msw'
 import { db } from '../useMSWDatabase'
 import type { Stamp } from '@/type/mainTypes'
+import type { DayDB } from '../DBTypes'
 import { getUserFromSession, errorResponse } from './useSession'
-import { computeDaysFromStamps } from '../services/dayService'
+import { computeDaysFromStamps, mergeMaterializedAndComputedDays } from '../services/dayService'
 
 export const useDayHandlers = () => {
   // Activity lookup helper
@@ -21,8 +22,24 @@ export const useDayHandlers = () => {
     }
   }
 
+  // Regime lookup helper
+  const getRegime = (regimeId: string) => {
+    const regime = db.regime.findFirst({
+      where: { id: { equals: regimeId } },
+    })
+    if (!regime) return null
+    return {
+      id: regime.id,
+      icon: regime.icon,
+      name: regime.name,
+      isHoliday: regime.isHoliday,
+      totalPoints: regime.totalPoints,
+      totalDurationMs: regime.totalDurationMs,
+    }
+  }
+
   return [
-    // Get user's days in date range (only materialized days with stamps)
+    // Get user's days in date range (materialized and computed)
     http.get('/api/days/', ({ request }) => {
       const user = getUserFromSession(request)
 
@@ -44,8 +61,8 @@ export const useDayHandlers = () => {
         where: { user: { equals: user.id } },
       }) as Stamp[]
 
-      // Compute days from stamps (only returns days with data)
-      const days = computeDaysFromStamps(
+      // Compute days from stamps
+      const computedDays = computeDaysFromStamps(
         stamps,
         fromDate,
         toDate,
@@ -53,6 +70,26 @@ export const useDayHandlers = () => {
         user.timezone,
         getActivity,
       )
+
+      // Get materialized days from DB
+      const materializedDaysDB = db.day.findMany({
+        where: {
+          user: { equals: user.id },
+          dateKey: { gte: fromDate, lte: toDate },
+        },
+      }) as DayDB[]
+
+      // Merge materialized and computed days
+      const days = mergeMaterializedAndComputedDays(
+        materializedDaysDB,
+        computedDays,
+        getActivity,
+        getRegime,
+        user.scale,
+      )
+
+      // Sort by dateKey descending
+      days.sort((a, b) => b.dateKey.localeCompare(a.dateKey))
 
       return HttpResponse.json(days)
     }),

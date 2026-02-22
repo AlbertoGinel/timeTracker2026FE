@@ -2,6 +2,13 @@ import type { UserRole, StampType } from '@/type/mainTypes'
 
 // DB Types (storage shapes - minimal, with only IDs)
 
+export type ScaleLevelDB = {
+  name: string
+  color: string
+  icon: string
+  percent: number
+}
+
 export type UserDB = {
   id: string
   username: string
@@ -9,6 +16,7 @@ export type UserDB = {
   nickname: string
   role: UserRole
   timezone: string
+  scale: ScaleLevelDB[]
 }
 
 export type ActivityDB = {
@@ -69,7 +77,37 @@ export type DayDB = {
   activityTotals: DayActivityTotalDB[]
   totalDurationMs: number
   totalPoints: number
-  isFinalized: boolean
+  percentageAchieved: number | null
+  achievedLevel: ScaleLevelDB | null
+  isShelved: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type TimeSectionActivityTotalDB = {
+  activityId: string
+  durationMs: number
+  pointsTotal: number
+}
+
+export type TimeSectionType = 'week' | 'month' | 'year'
+
+export type TimeSectionDB = {
+  id: string // format: userId:sectionType:startDate (e.g., "uuid:month:2026-02")
+  user: string
+  timezone: string
+  sectionType: TimeSectionType
+  sectionKey: string // Luxon-generated: "Week 7 2026", "February 2026", "2026"
+  sectionPassed: number // percentage (0-100) of the section that has elapsed
+  startUtc: string // ISO timestamp
+  endUtc: string // ISO timestamp
+  lengthMs: number // total duration of the section in milliseconds
+  activityTotals: TimeSectionActivityTotalDB[]
+  totalDurationMs: number // total activity time within the section
+  totalPoints: number // sum of points from all activities
+  percentageAchieved: number | null // average of days (0-200% capped, excludes no-regime and holiday days)
+  achievedLevel: ScaleLevelDB | null
+  isShelved: boolean
   createdAt: string
   updatedAt: string
 }
