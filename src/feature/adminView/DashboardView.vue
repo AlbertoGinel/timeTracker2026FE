@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { DateTime } from 'luxon'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useTimeSectionStore } from '@/store/useTimeSectionStore'
 import { useDashboard } from './useDashboard'
@@ -13,6 +12,7 @@ import DayItem from '../sharedView/DayItem.vue'
 import RegimeItem from '../sharedView/RegimeItem.vue'
 import UserItem from '../sharedView/userItem.vue'
 import ContinuousCalendar from '@/feature/sharedView/continuousCalendar/continuousCalendar.vue'
+import ClockDisplay from '../sharedView/clock.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -34,41 +34,13 @@ const {
 const isAdminView = computed(() => {
   return !!route.query.userId && route.query.userId !== authStore.loggedInUser?.id
 })
-
-// Clock
-const currentTime = ref(DateTime.now())
-let intervalId: number | null = null
-
-const formattedDateTime = computed(() => {
-  const tz = authStore.currentContextUser?.timezone || 'UTC'
-  const dt = currentTime.value.setZone(tz)
-  return {
-    time: dt.toFormat('HH:mm:ss'),
-    date: dt.toFormat('EEEE, MMMM d, yyyy'),
-  }
-})
-
-onMounted(() => {
-  intervalId = setInterval(() => {
-    currentTime.value = DateTime.now()
-  }, 1000)
-})
-
-onUnmounted(() => {
-  if (intervalId) {
-    clearInterval(intervalId)
-  }
-})
 </script>
 
 <template>
   <div class="dashboard">
     <div class="dashboard-header">
       <h1>📊 Dashboard</h1>
-      <div class="clock">
-        <div class="clock-time">{{ formattedDateTime.time }}</div>
-        <div class="clock-date">{{ formattedDateTime.date }}</div>
-      </div>
+      <ClockDisplay />
       <p v-if="!isAdminView">
         Welcome back, <strong>{{ authStore.currentContextUser?.nickname }}</strong
         >! {{ authStore.currentContextUser?.timezone }}
@@ -318,27 +290,6 @@ onUnmounted(() => {
   color: #333;
   font-size: 2.1rem;
   margin: 0;
-}
-
-.clock {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.clock-time {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #667eea;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.05em;
-}
-
-.clock-date {
-  font-size: 0.875rem;
-  color: #666;
-  font-weight: 500;
 }
 
 .dashboard-header p {

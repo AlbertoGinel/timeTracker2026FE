@@ -104,7 +104,6 @@ export type TimeSectionDB = {
   lengthMs: number // total duration of the section in milliseconds
   activityTotals: TimeSectionActivityTotalDB[]
   totalDurationMs: number // total activity time within the section
-  totalPoints: number // sum of points from all activities
   percentageAchieved: number | null // average of days (0-200% capped, excludes no-regime and holiday days)
   achievedLevel: ScaleLevelDB | null
   isShelved: boolean

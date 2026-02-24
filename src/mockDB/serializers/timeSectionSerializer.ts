@@ -35,7 +35,6 @@ export const serializeTimeSection = (
     lengthMs: timeSectionDB.lengthMs,
     activityTotals,
     totalDurationMs: timeSectionDB.totalDurationMs,
-    totalPoints: timeSectionDB.totalPoints,
     percentageAchieved: timeSectionDB.percentageAchieved,
     achievedLevel: timeSectionDB.achievedLevel,
     isShelved: timeSectionDB.isShelved,

@@ -40,10 +40,14 @@ export const useDashboard = () => {
   })
 
   const onActivityPressed = async (activity: Activity) => {
+    const userId = authStore.currentContextUser?.id
+    if (!userId) return null
+
     const created = await stampStore.createStamp({
       timestamp: toStampTimestamp(),
       type: 'start',
       activity_id: activity.id,
+      user: userId,
     })
     if (created) {
       await bundleService.loadUserBundle()
@@ -53,10 +57,14 @@ export const useDashboard = () => {
 
   const onStopPressed = async () => {
     if (!ongoingInterval.value) return null
+    const userId = authStore.currentContextUser?.id
+    if (!userId) return null
+
     const created = await stampStore.createStamp({
       timestamp: toStampTimestamp(),
       type: 'stop',
       activity_id: null,
+      user: userId,
     })
     if (created) {
       await bundleService.loadUserBundle()

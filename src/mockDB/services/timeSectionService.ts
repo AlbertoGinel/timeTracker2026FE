@@ -142,7 +142,7 @@ const aggregateActivityTotals = (days: Day[]): TimeSectionActivityTotalDB[] => {
 /**
  * Calculate average achievement percentage from days
  * Only includes days with regimes (excludes non-regime and holiday days)
- * Caps each day's achievement between 0-200%
+ * Simple average of percentages - no weighting by points since each week is different
  */
 const calculateAverageAchievement = (days: Day[]): number | null => {
   const eligibleDays = days.filter((day) => {
@@ -157,14 +157,11 @@ const calculateAverageAchievement = (days: Day[]): number | null => {
 
   if (eligibleDays.length === 0) return null
 
-  // Cap each day's achievement between 0-200%
-  const cappedAchievements = eligibleDays.map((day) => {
-    const achievement = day.percentageAchieved!
-    return Math.max(0, Math.min(200, achievement))
-  })
+  // Simple average of percentages
+  const sum = eligibleDays.reduce((acc, day) => acc + day.percentageAchieved!, 0)
+  const average = sum / eligibleDays.length
 
-  const sum = cappedAchievements.reduce((acc, val) => acc + val, 0)
-  return sum / cappedAchievements.length
+  return average
 }
 
 /**
@@ -205,7 +202,6 @@ export const computeTimeSectionsFromDays = (
     // Aggregate activity totals
     const activityTotals = aggregateActivityTotals(daysInSection)
     const totalDurationMs = activityTotals.reduce((sum, at) => sum + at.durationMs, 0)
-    const totalPoints = activityTotals.reduce((sum, at) => sum + at.pointsTotal, 0)
 
     // Calculate average achievement
     const percentageAchieved = calculateAverageAchievement(daysInSection)
@@ -235,7 +231,6 @@ export const computeTimeSectionsFromDays = (
       lengthMs,
       activityTotals,
       totalDurationMs,
-      totalPoints,
       percentageAchieved,
       achievedLevel,
       isShelved: false, // Time sections are not shelved in this implementation

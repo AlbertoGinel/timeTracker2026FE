@@ -1,6 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { db } from '../useMSWDatabase'
-import type { Stamp } from '@/type/mainTypes'
+import type { Stamp, StampCreateInput } from '@/type/mainTypes'
 import { getUserFromSession, errorResponse } from './useSession'
 import { serializeStamp } from '../serializers/stampSerializer'
 import { autoPersist } from '../useAutoPersist'
@@ -51,14 +51,24 @@ export const useStampHandlers = () => {
         return errorResponse(401, 'Authentication credentials were not provided')
       }
 
-      const body = (await request.json()) as Omit<Stamp, 'id' | 'user'>
+      const body = (await request.json()) as StampCreateInput
+
+      // Determine target user for stamp creation
+      let targetUserId = user.id
+      if (body.user && body.user !== user.id) {
+        // If user differs from session user, verify requester is admin
+        if (user.role !== 'admin') {
+          return errorResponse(403, 'Admin access required to create stamps for other users')
+        }
+        targetUserId = body.user
+      }
 
       const stamp = db.stamp.create({
         id: crypto.randomUUID(),
         timestamp: body.timestamp,
         type: body.type,
         activity_id: body.activity_id ?? undefined,
-        user: user.id,
+        user: targetUserId,
       }) as Stamp
 
       autoPersist()

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { Stamp, StampWithActivity } from '@/type/mainTypes'
+import type { Stamp, StampWithActivity, StampCreateInput } from '@/type/mainTypes'
 import { useAPIStamp } from '@/API/useAPIStamp'
 
 export const useStampStore = defineStore('stamp', {
@@ -39,7 +39,7 @@ export const useStampStore = defineStore('stamp', {
       this.error = null
     },
 
-    async createStamp(stamp: Omit<Stamp, 'id' | 'user'>): Promise<StampWithActivity | null> {
+    async createStamp(stamp: StampCreateInput): Promise<StampWithActivity | null> {
       this.isLoading = true
       this.error = null
 

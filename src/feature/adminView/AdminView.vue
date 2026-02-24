@@ -1,44 +1,31 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useAuthStore } from '@/store/useAuthStore'
-import { useUserStore } from '@/store/useUserStore'
-import { useBundleService } from '@/service/useBundleService'
 import UserItem from '@/feature/sharedView/userItem.vue'
+import StampItem from '@/feature/sharedView/StampItem.vue'
+import IntervalItem from '@/feature/sharedView/IntervalItem.vue'
+import ActivityItem from '@/feature/sharedView/ActivityItem.vue'
+import RegimeItem from '@/feature/sharedView/RegimeItem.vue'
+import OngoinInterval from '@/feature/sharedView/OngoinInterval.vue'
+import ContinuousCalendar from '@/feature/sharedView/continuousCalendar/continuousCalendar.vue'
+import ClockDisplay from '@/feature/sharedView/clock.vue'
+import TimeSectionItem from '@/feature/sharedView/TimeSectionItem.vue'
+import { useAdminView } from './useAdminView'
+import { useTimeSectionStore } from '@/store/useTimeSectionStore'
 
-const authStore = useAuthStore()
-const userStore = useUserStore()
-const bundleService = useBundleService()
+const {
+  userStore,
+  activityStore,
+  stampStore,
+  intervalStore,
+  regimeStore,
+  selectedUserId,
+  selectedUser,
+  ongoingInterval,
+  onUserSelected,
+  onActivityPressed,
+  onStopPressed,
+} = useAdminView()
 
-const selectedUserId = ref<string>('')
-
-const selectedUser = computed(() => {
-  if (!selectedUserId.value) return null
-  return userStore.users.find((u) => u.id === selectedUserId.value) || null
-})
-
-const onUserSelected = async () => {
-  if (!selectedUserId.value) return
-
-  try {
-    userStore.error = null
-
-    // Get the selected user
-    const user = userStore.users.find((u) => u.id === selectedUserId.value)
-    if (!user) {
-      userStore.error = 'User not found'
-      return
-    }
-
-    // Set the user as the current context
-    authStore.setContextUser(user)
-
-    // Load the selected user's bundle
-    await bundleService.loadUserBundle(selectedUserId.value)
-  } catch (err) {
-    userStore.error = 'Failed to load user data'
-    console.error('Error loading user bundle:', err)
-  }
-}
+const timeSectionStore = useTimeSectionStore()
 </script>
 
 <template>
@@ -67,18 +54,37 @@ const onUserSelected = async () => {
       </div>
 
       <div :class="$style.gridItem">
-        <h3>Section 2</h3>
-        <div :class="$style.card">Content 2</div>
+        <h3>Activities and regimes</h3>
+        <div :class="$style.card">
+          <div style="padding: 8px">
+            <ClockDisplay v-if="selectedUser" />
+            <OngoinInterval :interval="ongoingInterval" :on-stop="onStopPressed" />
+          </div>
+          <ActivityItem
+            v-for="activity in activityStore.activities"
+            :key="activity.id"
+            :activity="activity"
+            variant="admin"
+            :on-click="onActivityPressed"
+          />
+          <div :class="$style.regimesSection">
+            <h4 :class="$style.sectionTitle">Regimes</h4>
+            <RegimeItem
+              v-for="regime in regimeStore.regimes"
+              :key="regime.id"
+              :regime="regime"
+              variant="admin"
+            />
+          </div>
+        </div>
       </div>
 
-      <div :class="$style.gridItem">
-        <h3>Section 3</h3>
-        <div :class="$style.card">Content 3</div>
-      </div>
-
-      <div :class="$style.gridItem">
-        <h3>Section 4</h3>
-        <div :class="$style.card">Content 4</div>
+      <div :class="[$style.gridItem, $style.spanTwo]">
+        <h3>Calendar</h3>
+        <div :class="$style.card">
+          <ContinuousCalendar v-if="selectedUser" variant="admin" />
+          <p v-else :class="$style.placeholderText">Select a user to view calendar</p>
+        </div>
       </div>
 
       <div :class="$style.gridItem">
@@ -87,18 +93,60 @@ const onUserSelected = async () => {
       </div>
 
       <div :class="$style.gridItem">
-        <h3>Section 6</h3>
-        <div :class="$style.card">Content 6</div>
+        <h3>Stamps</h3>
+        <div :class="$style.card">
+          <StampItem
+            v-for="stamp in stampStore.stamps"
+            :key="stamp.id"
+            :stamp="stamp"
+            variant="admin"
+          />
+        </div>
       </div>
 
       <div :class="$style.gridItem">
-        <h3>Section 7</h3>
-        <div :class="$style.card">Content 7</div>
+        <h3>Intervals</h3>
+        <div :class="$style.card">
+          <IntervalItem
+            v-for="interval in intervalStore.intervals"
+            :key="interval.id"
+            :interval="interval"
+            variant="admin"
+          />
+        </div>
       </div>
 
       <div :class="$style.gridItem">
-        <h3>Section 8</h3>
-        <div :class="$style.card">Content 8</div>
+        <h3>Time Sections</h3>
+        <div :class="$style.card">
+          <div :class="$style.regimesSection">
+            <h4 :class="$style.sectionTitle">Weeks</h4>
+            <TimeSectionItem
+              v-for="week in timeSectionStore.weeks"
+              :key="week.id"
+              :time-section="week"
+              variant="admin"
+            />
+          </div>
+          <div :class="$style.regimesSection">
+            <h4 :class="$style.sectionTitle">Months</h4>
+            <TimeSectionItem
+              v-for="month in timeSectionStore.months"
+              :key="month.id"
+              :time-section="month"
+              variant="admin"
+            />
+          </div>
+          <div :class="$style.regimesSection">
+            <h4 :class="$style.sectionTitle">Years</h4>
+            <TimeSectionItem
+              v-for="year in timeSectionStore.years"
+              :key="year.id"
+              :time-section="year"
+              variant="admin"
+            />
+          </div>
+        </div>
       </div>
 
       <div :class="$style.gridItem">
@@ -137,6 +185,8 @@ const onUserSelected = async () => {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .gridItem h3 {
@@ -147,14 +197,18 @@ const onUserSelected = async () => {
   flex-shrink: 0;
 }
 
+.spanTwo {
+  grid-column: span 2;
+}
+
 .card {
   background: var(--color-bg);
   padding: 0;
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  overflow: auto;
   flex: 1;
-  height: 100%;
+  min-height: 0;
 }
 
 /* User selection specific styles */
@@ -195,6 +249,28 @@ const onUserSelected = async () => {
 .errorText {
   color: var(--color-danger);
   font-weight: bold;
+  margin: 0;
+}
+
+.regimesSection {
+  padding: var(--spacing-sm) var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.sectionTitle {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-xs) 0;
+}
+
+.placeholderText {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: var(--spacing-xl);
   margin: 0;
 }
 </style>

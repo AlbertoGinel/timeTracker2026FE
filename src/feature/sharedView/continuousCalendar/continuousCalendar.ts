@@ -1,7 +1,13 @@
 import { computed } from 'vue'
 import { DateTime } from 'luxon'
 import { useDayStore } from '@/store/useDayStore'
-import type { Day } from '@/type/mainTypes'
+import { useTimeSectionStore } from '@/store/useTimeSectionStore'
+import type { Day, TimeSection } from '@/type/mainTypes'
+
+export interface WeekRow {
+  weekKey: string
+  week: TimeSection | undefined
+}
 
 export interface CalendarCell {
   dateKey: string // YYYY-MM-DD
@@ -21,12 +27,22 @@ export interface CalendarCell {
 
 export function useContinuousCalendar(timezone: string) {
   const dayStore = useDayStore()
+  const timeSectionStore = useTimeSectionStore()
 
   /**
    * Get current date in the user's timezone as YYYY-MM-DD
    */
   const getTodayDateKey = (): string => {
     return DateTime.now().setZone(timezone).toISODate()!
+  }
+
+  /**
+   * Get week section key (e.g., "Week 8 2026") for a given dateKey
+   */
+  const getWeekKey = (dateKey: string): string => {
+    const dt = DateTime.fromISO(dateKey, { zone: timezone })
+    // Get ISO week number and year - format matches backend: "Week {number} {year}"
+    return `Week ${dt.weekNumber} ${dt.weekYear}`
   }
 
   /**
@@ -112,6 +128,39 @@ export function useContinuousCalendar(timezone: string) {
   })
 
   /**
+   * Get week rows with data for each row in the calendar grid
+   */
+  const weekRows = computed((): WeekRow[] => {
+    const todayDateKey = getTodayDateKey()
+    const currentWeekStart = getWeekStart(todayDateKey)
+
+    // Calculate the start date (3 weeks before current week)
+    const gridStartDateKey = addDays(currentWeekStart, -3 * 7)
+
+    const rows: WeekRow[] = []
+
+    // Generate 7 week rows (one for each calendar row)
+    for (let week = 0; week < 7; week++) {
+      const weekStartDateKey = addDays(gridStartDateKey, week * 7)
+
+      // Skip future weeks (keep current and past only)
+      if (weekStartDateKey > todayDateKey) {
+        continue
+      }
+
+      const weekKey = getWeekKey(weekStartDateKey)
+      const weekData = timeSectionStore.getWeekByKey(weekKey)
+
+      rows.push({
+        weekKey,
+        week: weekData,
+      })
+    }
+
+    return rows
+  })
+
+  /**
    * Handle cell click
    */
   const handleCellClick = (cell: CalendarCell) => {
@@ -127,6 +176,7 @@ export function useContinuousCalendar(timezone: string) {
 
   return {
     calendarGrid,
+    weekRows,
     handleCellClick,
   }
 }

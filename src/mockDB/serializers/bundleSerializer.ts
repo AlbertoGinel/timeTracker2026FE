@@ -1,33 +1,8 @@
 import type { Bundle as BundleInternal } from '../services/bundleService'
-import type { ActivitySummary, Bundle, Activity, Regime } from '@/type/mainTypes'
+import type { ActivitySummary, Bundle, Activity } from '@/type/mainTypes'
 import { serializeStamp } from './stampSerializer'
 import { serializeTimeSection } from './timeSectionSerializer'
-import type { RegimeDB, ActivityDB, StampDB } from '../DBTypes'
-
-/**
- * Serialize a regime (just add the Regime type wrapper)
- */
-const serializeRegime = (regimeDB: RegimeDB): Regime => {
-  return {
-    id: regimeDB.id,
-    user: regimeDB.user,
-    icon: regimeDB.icon,
-    name: regimeDB.name,
-    isHoliday: regimeDB.isHoliday,
-    intervals: regimeDB.intervals.map((interval) => ({
-      intervalId: interval.intervalId,
-      activityId: interval.activityId,
-      activity: { id: '', name: '', color: '', icon: '' }, // Will be populated if needed
-      startTime: interval.startTime,
-      endTime: interval.endTime,
-      durationMs: interval.durationMs,
-    })),
-    totalPoints: regimeDB.totalPoints,
-    totalDurationMs: regimeDB.totalDurationMs,
-    createdAt: regimeDB.createdAt,
-    updatedAt: regimeDB.updatedAt,
-  }
-}
+import type { ActivityDB, StampDB } from '../DBTypes'
 
 /**
  * Serialize the complete bundle (populate all activity objects)
@@ -45,8 +20,29 @@ export const serializeBundle = (bundle: BundleInternal): Bundle => {
     }
   }
 
-  // Serialize regimes
-  const regimes = bundle.regimes.map(serializeRegime)
+  // Serialize regimes with populated activities
+  const regimes = bundle.regimes.map((regimeDB) => ({
+    id: regimeDB.id,
+    user: regimeDB.user,
+    icon: regimeDB.icon,
+    name: regimeDB.name,
+    isHoliday: regimeDB.isHoliday,
+    intervals: regimeDB.intervals.map((interval) => {
+      const activity = getActivity(interval.activityId)
+      return {
+        intervalId: interval.intervalId,
+        activityId: interval.activityId,
+        activity: activity || { id: '', name: '', color: '', icon: '' },
+        startTime: interval.startTime,
+        endTime: interval.endTime,
+        durationMs: interval.durationMs,
+      }
+    }),
+    totalPoints: regimeDB.totalPoints,
+    totalDurationMs: regimeDB.totalDurationMs,
+    createdAt: regimeDB.createdAt,
+    updatedAt: regimeDB.updatedAt,
+  }))
 
   // Serialize activities (convert to full Activity type)
   const activities: Activity[] = bundle.activities.map((a: ActivityDB) => ({
@@ -62,9 +58,11 @@ export const serializeBundle = (bundle: BundleInternal): Bundle => {
   }))
 
   // Serialize stamps (convert activity_id undefined to null for Stamp type)
-  const stamps = bundle.stamps.map((stamp: StampDB) =>
-    serializeStamp({ ...stamp, activity_id: stamp.activity_id ?? null }, getActivity),
-  )
+  const stamps = bundle.stamps
+    .map((stamp: StampDB) =>
+      serializeStamp({ ...stamp, activity_id: stamp.activity_id ?? null }, getActivity),
+    )
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 
   // Intervals and days are already serialized by the services
   const intervals = bundle.intervals

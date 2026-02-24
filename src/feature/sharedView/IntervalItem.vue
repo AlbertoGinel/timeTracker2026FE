@@ -3,9 +3,11 @@ import type { Interval } from '@/type/mainTypes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { DateTime, Duration } from 'luxon'
 import { computed } from 'vue'
+import adminStyles from '@/styles/adminListItem.module.css'
 
 const props = defineProps<{
   interval: Interval
+  variant?: 'default' | 'admin'
 }>()
 
 const authStore = useAuthStore()
@@ -25,6 +27,21 @@ const formattedTo = computed(() => {
     .toFormat('LLL dd, HH:mm')
 })
 
+const formattedFromAdmin = computed(() => {
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
+  return DateTime.fromISO(props.interval.fromDate, { zone: 'utc' })
+    .setZone(zone)
+    .toFormat('LLL dd, HH:mm:ss')
+})
+
+const formattedToAdmin = computed(() => {
+  if (!props.interval.toDate) return 'Ongoing'
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
+  return DateTime.fromISO(props.interval.toDate, { zone: 'utc' })
+    .setZone(zone)
+    .toFormat('LLL dd, HH:mm:ss')
+})
+
 const durationLabel = computed(() => {
   const totalSeconds = Math.max(0, props.interval.duration)
   return Duration.fromObject({ seconds: totalSeconds }).toFormat('hh:mm:ss')
@@ -32,7 +49,22 @@ const durationLabel = computed(() => {
 </script>
 
 <template>
-  <div class="interval-item">
+  <!-- Admin Variant: Simple List Style -->
+  <div
+    v-if="variant === 'admin'"
+    :class="adminStyles.listItem"
+    :style="{ '--item-color': interval.activity.color }"
+  >
+    <span :class="adminStyles.icon">{{ interval.activity.icon }}</span>
+    <span :class="adminStyles.content">{{ interval.activity.name }}</span>
+    <span :class="adminStyles.timestamp">{{ formattedFromAdmin }}</span>
+    <span style="flex-shrink: 0">→</span>
+    <span :class="adminStyles.timestamp">{{ formattedToAdmin }}</span>
+    <span :class="adminStyles.duration">{{ durationLabel }}</span>
+  </div>
+
+  <!-- Default Variant: Full Layout -->
+  <div v-else class="interval-item">
     <div class="interval-icon" :style="{ backgroundColor: interval.activity.color }">
       {{ interval.activity.icon }}
     </div>

@@ -2,6 +2,7 @@
 import { useAuthStore } from '@/store/useAuthStore'
 import { computed } from 'vue'
 import type { User } from '@/type/mainTypes'
+import adminStyles from '@/styles/adminListItem.module.css'
 
 const props = defineProps<{
   user?: User | null
@@ -14,7 +15,26 @@ const displayUser = computed(() => props.user || authStore.currentContextUser)
 </script>
 
 <template>
-  <div v-if="displayUser" class="user-item" :class="{ 'user-item--admin': variant === 'admin' }">
+  <!-- Admin Variant: Simple Text Layout -->
+  <div v-if="displayUser && variant === 'admin'" class="user-item-admin">
+    <div class="admin-name">{{ displayUser.nickname }}</div>
+    <div class="admin-line">Username: {{ displayUser.username }}</div>
+    <div class="admin-line">Timezone: {{ displayUser.timezone }}</div>
+    <div class="admin-line">Scale:</div>
+    <div
+      v-for="(level, index) in displayUser.scale"
+      :key="index"
+      :class="adminStyles.listItem"
+      :style="{ '--item-color': level.color }"
+    >
+      <span :class="adminStyles.icon">{{ level.icon }}</span>
+      <span :class="adminStyles.content">{{ level.name }}</span>
+      <span :class="adminStyles.value">{{ level.percent }}%</span>
+    </div>
+  </div>
+
+  <!-- Default Variant: Full Layout -->
+  <div v-else-if="displayUser" class="user-item">
     <div class="user-header">
       <h2 class="user-nickname">{{ displayUser.nickname }}</h2>
       <span class="user-role" :class="displayUser.role">{{ displayUser.role }}</span>
@@ -60,6 +80,31 @@ const displayUser = computed(() => props.user || authStore.currentContextUser)
 </template>
 
 <style scoped>
+/* Admin Variant Styles */
+.user-item-admin {
+  padding: 16px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.6;
+  color: #2c3e50;
+}
+
+.admin-name {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #2c3e50;
+}
+
+.admin-line {
+  font-size: 14px;
+  margin: 4px 0;
+  color: #2c3e50;
+}
+
+/* Default Variant Styles */
 .user-item {
   background: white;
   border-radius: 12px;

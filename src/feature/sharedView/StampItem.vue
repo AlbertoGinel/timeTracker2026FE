@@ -3,9 +3,11 @@ import type { StampWithActivity } from '@/type/mainTypes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { DateTime } from 'luxon'
 import { computed } from 'vue'
+import adminStyles from '@/styles/adminListItem.module.css'
 
 const props = defineProps<{
   stamp: StampWithActivity
+  variant?: 'default' | 'admin'
 }>()
 
 const authStore = useAuthStore()
@@ -29,7 +31,23 @@ const iconBackground = computed(() => {
 </script>
 
 <template>
-  <div class="stamp-item">
+  <!-- Admin Variant: Simple List Style -->
+  <div
+    v-if="variant === 'admin'"
+    :class="adminStyles.listItem"
+    :style="{ '--item-color': iconBackground }"
+  >
+    <span :class="adminStyles.icon">
+      {{ isStop ? typeIcon : props.stamp.activity?.icon }}
+    </span>
+    <span :class="adminStyles.content">
+      {{ isStop ? 'STOP' : (stamp.activity?.name ?? 'No activity') }}
+    </span>
+    <span :class="adminStyles.valueWide">{{ formattedTime }}</span>
+  </div>
+
+  <!-- Default Variant: Full Layout -->
+  <div v-else class="stamp-item">
     <div class="stamp-icon" :style="{ backgroundColor: iconBackground }">
       {{ isStop ? typeIcon : props.stamp.activity?.icon }}
     </div>

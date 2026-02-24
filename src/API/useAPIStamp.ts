@@ -1,4 +1,4 @@
-import type { Stamp, StampWithActivity } from '@/type/mainTypes'
+import type { Stamp, StampWithActivity, StampCreateInput } from '@/type/mainTypes'
 import { useHandleRequest } from './useHandleRequest'
 
 /**
@@ -15,7 +15,7 @@ export const useAPIStamp = () => {
       return handleRequest<StampWithActivity[]>('/api/stamps/')
     },
 
-    createStamp: (stamp: Omit<Stamp, 'id' | 'user'>) =>
+    createStamp: (stamp: StampCreateInput) =>
       handleRequest<StampWithActivity>('/api/stamps/', {
         method: 'POST',
         body: JSON.stringify(stamp),

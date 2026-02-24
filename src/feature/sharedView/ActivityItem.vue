@@ -1,13 +1,36 @@
 <script setup lang="ts">
 import type { Activity } from '@/type/mainTypes'
+import adminStyles from '@/styles/adminListItem.module.css'
 
-defineProps<{
+const props = defineProps<{
   activity: Activity
+  variant?: 'default' | 'admin'
+  onClick?: (activity: Activity) => void
 }>()
+
+const handleClick = () => {
+  if (props.variant === 'admin' && props.onClick) {
+    props.onClick(props.activity)
+  }
+}
 </script>
 
 <template>
-  <div class="activity-item">
+  <!-- Admin Variant: Simple List Style -->
+  <div
+    v-if="variant === 'admin'"
+    :class="adminStyles.listItem"
+    :style="{ '--item-color': activity.color, cursor: 'pointer' }"
+    @click="handleClick"
+  >
+    <span :class="adminStyles.icon">{{ activity.icon }}</span>
+    <span :class="adminStyles.content">{{ activity.name }}</span>
+    <span :class="adminStyles.valueWide">⚡ {{ activity.points_per_hour }} pts/hr</span>
+    <span :class="adminStyles.valueWide">⏱️ {{ Math.floor(activity.seconds_free / 60) }} min</span>
+  </div>
+
+  <!-- Default Variant: Full Layout -->
+  <div v-else class="activity-item">
     <span class="activity-icon" :style="{ backgroundColor: activity.color }">
       {{ activity.icon }}
     </span>

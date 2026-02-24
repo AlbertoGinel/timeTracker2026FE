@@ -2,9 +2,15 @@
 import type { Regime } from '@/type/mainTypes'
 import { computed } from 'vue'
 
-const props = defineProps<{
-  regime: Regime
-}>()
+const props = withDefaults(
+  defineProps<{
+    regime: Regime
+    variant?: 'default' | 'admin'
+  }>(),
+  {
+    variant: 'default',
+  },
+)
 
 const formattedPoints = computed(() => {
   return Math.round(props.regime.totalPoints)
@@ -43,7 +49,13 @@ const activitySummaries = computed(() => {
 </script>
 
 <template>
-  <div class="regime-item" :class="{ 'regime-item--holiday': regime.isHoliday }">
+  <div
+    class="regime-item"
+    :class="{
+      'regime-item--holiday': regime.isHoliday,
+      'regime-item--admin': variant === 'admin',
+    }"
+  >
     <div class="regime-header">
       <span class="regime-name"> {{ regime.icon }} {{ regime.name }} </span>
       <span class="regime-points">⭐ {{ formattedPoints }}</span>
@@ -118,5 +130,34 @@ const activitySummaries = computed(() => {
   font-size: 0.85rem;
   color: #9ca3af;
   font-style: italic;
+}
+
+/* Admin variant - compact */
+.regime-item--admin {
+  padding: 0.4rem 0.5rem;
+  border-radius: 4px;
+  margin: 0;
+}
+
+.regime-item--admin .regime-header {
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.regime-item--admin .regime-points {
+  font-size: 0.8rem;
+}
+
+.regime-item--admin .regime-activities {
+  gap: 0.15rem;
+  font-size: 0.75rem;
+}
+
+.regime-item--admin .regime-activity {
+  line-height: 1.3;
+}
+
+.regime-item--admin .regime-empty {
+  font-size: 0.75rem;
 }
 </style>
