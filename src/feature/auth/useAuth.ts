@@ -11,7 +11,8 @@ export const useAuth = () => {
   // Computed properties from store
   const isAuthenticated = computed(() => authStore.isAuthenticated)
   const isAdmin = computed(() => authStore.isAdmin)
-  const currentUser = computed(() => authStore.currentUser)
+  const loggedInUser = computed(() => authStore.loggedInUser)
+  const currentContextUser = computed(() => authStore.currentContextUser)
   const isLoading = computed(() => authStore.isLoading)
   const error = computed(() => authStore.error)
 
@@ -46,7 +47,8 @@ export const useAuth = () => {
     // Computed state
     isAuthenticated,
     isAdmin,
-    currentUser,
+    loggedInUser,
+    currentContextUser,
     isLoading,
     error,
     // Actions

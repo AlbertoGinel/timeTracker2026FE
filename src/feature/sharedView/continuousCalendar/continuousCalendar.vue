@@ -76,7 +76,7 @@ import { useContinuousCalendar } from './continuousCalendar'
 const authStore = useAuthStore()
 
 // Use user's timezone from auth store
-const timezone = computed(() => authStore.currentUser?.timezone || 'UTC')
+const timezone = computed(() => authStore.currentContextUser?.timezone || 'UTC')
 
 const { calendarGrid, handleCellClick } = useContinuousCalendar(timezone.value)
 

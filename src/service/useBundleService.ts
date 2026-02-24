@@ -7,6 +7,7 @@ import { useRegimeStore } from '@/store/useRegimeStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useTimeSectionStore } from '@/store/useTimeSectionStore'
 import { useAPIBundle } from '@/API/useAPIBundle'
+import type { Bundle } from '@/type/mainTypes'
 
 /**
  * Bundle Service - orchestrates loading all user data after authentication
@@ -24,22 +25,30 @@ export const useBundleService = () => {
   /**
    * Load all user data - called after login or session restore
    * Now uses the bundle endpoint to fetch everything in one request
+   *
+   * @param userId - Optional: Load bundle for a specific user (admin only)
    */
-  const loadUserBundle = async (): Promise<void> => {
+  const loadUserBundle = async (userId?: string): Promise<void> => {
     try {
-      const user = authStore.currentUser
-      if (!user) {
+      const loggedInUser = authStore.loggedInUser
+      if (!loggedInUser) {
         throw new Error('No authenticated user found')
       }
 
-      // Calculate date range: 30 days before and 30 days after today
-      const today = DateTime.now().setZone(user.timezone)
+      // If userId is provided, verify logged in user is admin
+      if (userId && loggedInUser.role !== 'admin') {
+        throw new Error('Admin access required to load other users data')
+      }
+
+      // Use loggedInUser timezone for date calculations (default)
+      // This will be used to compute ±30 days from today
+      const today = DateTime.now().setZone(loggedInUser.timezone)
       const fromDate = today.minus({ days: 30 }).toISODate()!
       const toDate = today.plus({ days: 30 }).toISODate()!
 
       // Fetch the complete bundle in one request
       const api = useAPIBundle()
-      const bundle = await api.getBundle(fromDate, toDate)
+      const bundle = await api.getBundle(fromDate, toDate, userId)
 
       // Load data into stores
       regimeStore.loadFromBundle(bundle.regimes)
@@ -52,6 +61,19 @@ export const useBundleService = () => {
       console.error('Failed to load user bundle:', error)
       throw error
     }
+  }
+
+  /**
+   * Load bundle data directly from auth response
+   * Called when user logs in or session is restored
+   */
+  const loadBundleFromAuthResponse = (bundle: Bundle): void => {
+    regimeStore.loadFromBundle(bundle.regimes)
+    activityStore.loadFromBundle(bundle.activities)
+    stampStore.loadFromBundle(bundle.stamps)
+    intervalStore.loadFromBundle(bundle.intervals)
+    dayStore.loadFromBundle(bundle.days)
+    timeSectionStore.loadFromBundle(bundle.timeSections)
   }
 
   /**
@@ -68,6 +90,7 @@ export const useBundleService = () => {
 
   return {
     loadUserBundle,
+    loadBundleFromAuthResponse,
     clearUserBundle,
   }
 }

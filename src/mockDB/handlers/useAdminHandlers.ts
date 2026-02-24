@@ -20,13 +20,15 @@ const requireAdmin = (request: Request) => {
 
 export const useAdminHandlers = () => {
   return [
-    // Get all users
+    // Get all users (excluding admins)
     http.get('/api/admin/users/', ({ request }) => {
       const error = requireAdmin(request)
       if (error) return error
 
       const users = db.user.getAll()
-      const usersWithoutPasswords = users.map(({ ...user }) => user)
+      // Filter out admin users
+      const regularUsers = users.filter((user) => user.role !== 'admin')
+      const usersWithoutPasswords = regularUsers.map(({ ...user }) => user)
 
       return HttpResponse.json(usersWithoutPasswords)
     }),

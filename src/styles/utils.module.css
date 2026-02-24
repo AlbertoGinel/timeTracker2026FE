@@ -1,0 +1,34 @@
+/* Layout utilities */
+.flex {
+  display: flex;
+}
+.flexColumn {
+  flex-direction: column;
+}
+.alignCenter {
+  align-items: center;
+}
+.justifyCenter {
+  justify-content: center;
+}
+.gap1 {
+  gap: 1rem;
+}
+.textCenter {
+  text-align: center;
+}
+.fullHeight {
+  height: 100%;
+}
+.flex1 {
+  flex: 1;
+}
+
+/* Card base */
+.cardBase {
+  background: white;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+}

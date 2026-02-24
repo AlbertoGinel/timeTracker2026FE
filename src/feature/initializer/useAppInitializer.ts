@@ -1,6 +1,5 @@
 import { useAuthStore } from '@/store/useAuthStore'
 import { useMSW } from '@/mockDB/useMSW'
-import { useBundleService } from '@/service/useBundleService'
 
 let initialized = false
 
@@ -9,7 +8,7 @@ export const useAppInitializer = () => {
    * Initialize the application
    * - Set up MSW (Mock Service Worker)
    * - Restore user session if available
-   * - Load user bundle if session restored
+   * - Bundle/users are loaded automatically from auth response
    */
   const initializeApp = async (): Promise<void> => {
     if (initialized) return
@@ -26,15 +25,12 @@ export const useAppInitializer = () => {
       }
 
       // Try to restore user session
+      // This will automatically load bundle/users from the auth response
       const authStore = useAuthStore()
       const sessionRestored = await authStore.restoreSession()
 
       if (sessionRestored) {
         console.log('User session restored')
-
-        // Load user bundle after successful session restore
-        const bundleService = useBundleService()
-        await bundleService.loadUserBundle()
       } else {
         console.log('No previous session found')
       }

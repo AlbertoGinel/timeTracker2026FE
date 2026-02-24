@@ -1,0 +1,45 @@
+/* Design tokens as CSS custom properties */
+:root {
+  /* Colors */
+  --color-primary: #42b983;
+  --color-danger: #d32f2f;
+  --color-text: #333;
+  --color-text-muted: #666;
+  --color-bg: #ffffff;
+  --color-border: #ddd;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.5rem;
+  --spacing-2xl: 2rem;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+
+  /* Shadows */
+  --shadow-card: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  /* Font Sizes */
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-lg: 1.25rem;
+  --font-xl: 1.5rem;
+
+  /* Other */
+  --max-width-input: 300px;
+}
+
+/* Export as CSS modules too */
+.colorPrimary {
+  color: var(--color-primary);
+}
+.colorDanger {
+  color: var(--color-danger);
+}
+.colorTextMuted {
+  color: var(--color-text-muted);
+}

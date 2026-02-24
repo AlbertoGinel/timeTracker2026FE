@@ -5,6 +5,10 @@ import App from './App.vue'
 import router from './router'
 import { useAppInitializer } from './feature/initializer/useAppInitializer'
 
+// Import global styles and design tokens
+import '@/styles/global.css'
+import '@/styles/tokens.module.css'
+
 const app = createApp(App)
 
 app.use(createPinia())

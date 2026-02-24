@@ -30,7 +30,7 @@ export const useDashboard = () => {
 
   const sortedDays = computed(() => {
     // Get today's dateKey in the user's timezone
-    const userTimezone = authStore.currentUser?.timezone || 'UTC'
+    const userTimezone = authStore.currentContextUser?.timezone || 'UTC'
     const todayDateKey = DateTime.now().setZone(userTimezone).toFormat('yyyy-MM-dd')
 
     // Filter to only show days <= today (no future days), then sort descending

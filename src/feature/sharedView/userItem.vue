@@ -1,31 +1,37 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/store/useAuthStore'
 import { computed } from 'vue'
+import type { User } from '@/type/mainTypes'
+
+const props = defineProps<{
+  user?: User | null
+  variant?: 'default' | 'admin'
+}>()
 
 const authStore = useAuthStore()
 
-const user = computed(() => authStore.currentUser)
+const displayUser = computed(() => props.user || authStore.currentContextUser)
 </script>
 
 <template>
-  <div v-if="user" class="user-item">
+  <div v-if="displayUser" class="user-item" :class="{ 'user-item--admin': variant === 'admin' }">
     <div class="user-header">
-      <h2 class="user-nickname">{{ user.nickname }}</h2>
-      <span class="user-role" :class="user.role">{{ user.role }}</span>
+      <h2 class="user-nickname">{{ displayUser.nickname }}</h2>
+      <span class="user-role" :class="displayUser.role">{{ displayUser.role }}</span>
     </div>
 
     <div class="user-info">
       <div class="info-row">
         <span class="info-label">Username:</span>
-        <span class="info-value">{{ user.username }}</span>
+        <span class="info-value">{{ displayUser.username }}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Timezone:</span>
-        <span class="info-value">{{ user.timezone }}</span>
+        <span class="info-value">{{ displayUser.timezone }}</span>
       </div>
       <div class="info-row">
         <span class="info-label">User ID:</span>
-        <span class="info-value">{{ user.id }}</span>
+        <span class="info-value">{{ displayUser.id }}</span>
       </div>
     </div>
 
@@ -33,7 +39,7 @@ const user = computed(() => authStore.currentUser)
       <h3 class="scale-title">Performance Scale</h3>
       <div class="scale-levels">
         <div
-          v-for="(level, index) in user.scale"
+          v-for="(level, index) in displayUser.scale"
           :key="index"
           class="scale-level"
           :style="{ borderLeftColor: level.color }"

@@ -28,7 +28,7 @@ onBeforeUnmount(() => {
 
 const formattedFrom = computed(() => {
   if (!props.interval) return ''
-  const zone = authStore.currentUser?.timezone ?? 'UTC'
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
   return DateTime.fromISO(props.interval.fromDate, { zone: 'utc' })
     .setZone(zone)
     .toFormat('LLL dd, HH:mm')

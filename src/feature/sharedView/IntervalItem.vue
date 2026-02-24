@@ -11,7 +11,7 @@ const props = defineProps<{
 const authStore = useAuthStore()
 
 const formattedFrom = computed(() => {
-  const zone = authStore.currentUser?.timezone ?? 'UTC'
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
   return DateTime.fromISO(props.interval.fromDate, { zone: 'utc' })
     .setZone(zone)
     .toFormat('LLL dd, HH:mm')
@@ -19,7 +19,7 @@ const formattedFrom = computed(() => {
 
 const formattedTo = computed(() => {
   if (!props.interval.toDate) return 'Ongoing'
-  const zone = authStore.currentUser?.timezone ?? 'UTC'
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
   return DateTime.fromISO(props.interval.toDate, { zone: 'utc' })
     .setZone(zone)
     .toFormat('LLL dd, HH:mm')

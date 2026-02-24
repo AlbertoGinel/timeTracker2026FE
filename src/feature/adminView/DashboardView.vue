@@ -1,18 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { DateTime } from 'luxon'
 import { useAuthStore } from '@/store/useAuthStore'
+import { useTimeSectionStore } from '@/store/useTimeSectionStore'
 import { useDashboard } from './useDashboard'
-import ActivityItem from './ActivityItem.vue'
-import StampItem from './StampItem.vue'
-import IntervalItem from './IntervalItem.vue'
-import OngoinInterval from './OngoinInterval.vue'
-import DayItem from './DayItem.vue'
-import RegimeItem from './RegimeItem.vue'
-import UserItem from './userItem.vue'
-import ContinuousCalendar from '@/feature/continuousCalendar/continuousCalendar.vue'
+import ActivityItem from '../sharedView/ActivityItem.vue'
+import StampItem from '../sharedView/StampItem.vue'
+import IntervalItem from '../sharedView/IntervalItem.vue'
+import OngoinInterval from '../sharedView/OngoinInterval.vue'
+import DayItem from '../sharedView/DayItem.vue'
+import RegimeItem from '../sharedView/RegimeItem.vue'
+import UserItem from '../sharedView/userItem.vue'
+import ContinuousCalendar from '@/feature/sharedView/continuousCalendar/continuousCalendar.vue'
 
+const route = useRoute()
 const authStore = useAuthStore()
+const timeSectionStore = useTimeSectionStore()
 const {
   activityStore,
   stampStore,
@@ -26,12 +30,17 @@ const {
   onStopPressed,
 } = useDashboard()
 
+// Check if viewing as admin (viewing another user's data)
+const isAdminView = computed(() => {
+  return !!route.query.userId && route.query.userId !== authStore.loggedInUser?.id
+})
+
 // Clock
 const currentTime = ref(DateTime.now())
 let intervalId: number | null = null
 
 const formattedDateTime = computed(() => {
-  const tz = authStore.currentUser?.timezone || 'UTC'
+  const tz = authStore.currentContextUser?.timezone || 'UTC'
   const dt = currentTime.value.setZone(tz)
   return {
     time: dt.toFormat('HH:mm:ss'),
@@ -60,17 +69,23 @@ onUnmounted(() => {
         <div class="clock-time">{{ formattedDateTime.time }}</div>
         <div class="clock-date">{{ formattedDateTime.date }}</div>
       </div>
-      <p>
-        Welcome back, <strong>{{ authStore.currentUser?.nickname }}</strong
-        >! {{ authStore.currentUser?.timezone }}
+      <p v-if="!isAdminView">
+        Welcome back, <strong>{{ authStore.currentContextUser?.nickname }}</strong
+        >! {{ authStore.currentContextUser?.timezone }}
       </p>
+      <div v-else class="admin-banner">
+        <p>🔒 <strong>Admin View:</strong> Viewing user data (read-only mode)</p>
+      </div>
     </div>
 
     <div class="dashboard-content">
       <div class="grid-item grid-item-ongoing">
         <h2>Ongoing Interval</h2>
         <div class="card">
-          <OngoinInterval :interval="ongoingInterval" :onStop="onStopPressed" />
+          <OngoinInterval
+            :interval="ongoingInterval"
+            :onStop="isAdminView ? () => {} : onStopPressed"
+          />
         </div>
       </div>
 
@@ -84,7 +99,7 @@ onUnmounted(() => {
           </div>
 
           <div v-else-if="activityStore.activities.length === 0" class="empty">
-            No activities yet. Create your first activity!
+            No activities yet.
           </div>
 
           <div v-else class="activities-list">
@@ -93,7 +108,9 @@ onUnmounted(() => {
               :key="activity.id"
               type="button"
               class="activity-button"
-              @click="onActivityPressed(activity)"
+              :class="{ 'admin-disabled': isAdminView }"
+              :disabled="isAdminView"
+              @click="!isAdminView && onActivityPressed(activity)"
             >
               <ActivityItem :activity="activity" />
             </button>
@@ -192,6 +209,89 @@ onUnmounted(() => {
           <UserItem />
         </div>
       </div>
+
+      <div class="grid-item grid-item-timesection-top">
+        <h2>Weeks</h2>
+        <div class="card">
+          <div v-if="timeSectionStore.isLoading" class="loading">Loading weeks...</div>
+
+          <div v-else-if="timeSectionStore.error" class="error">
+            {{ timeSectionStore.error }}
+          </div>
+
+          <div v-else-if="timeSectionStore.weeks.length === 0" class="empty">
+            No weeks available.
+          </div>
+
+          <div v-else class="timesections-list">
+            <div v-for="week in timeSectionStore.weeks" :key="week.id" class="timesection-item">
+              <div class="timesection-header">
+                <span class="timesection-key">{{ week.sectionKey }}</span>
+                <span class="timesection-progress"
+                  >{{ week.sectionPassed.toFixed(1) }}% complete</span
+                >
+              </div>
+              <div v-if="week.percentageAchieved" class="timesection-achievement">
+                Achievement: {{ week.percentageAchieved.toFixed(1) }}%
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-item grid-item-timesection-bottom">
+        <h2>Months & Years</h2>
+        <div class="card">
+          <div v-if="timeSectionStore.isLoading" class="loading">Loading time sections...</div>
+
+          <div v-else-if="timeSectionStore.error" class="error">
+            {{ timeSectionStore.error }}
+          </div>
+
+          <div v-else class="timesections-list">
+            <div v-if="timeSectionStore.months.length > 0">
+              <h3>Months</h3>
+              <div
+                v-for="month in timeSectionStore.months"
+                :key="month.id"
+                class="timesection-item"
+              >
+                <div class="timesection-header">
+                  <span class="timesection-key">{{ month.sectionKey }}</span>
+                  <span class="timesection-progress"
+                    >{{ month.sectionPassed.toFixed(1) }}% complete</span
+                  >
+                </div>
+                <div v-if="month.percentageAchieved" class="timesection-achievement">
+                  Achievement: {{ month.percentageAchieved.toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+
+            <div v-if="timeSectionStore.years.length > 0" style="margin-top: 1rem">
+              <h3>Years</h3>
+              <div v-for="year in timeSectionStore.years" :key="year.id" class="timesection-item">
+                <div class="timesection-header">
+                  <span class="timesection-key">{{ year.sectionKey }}</span>
+                  <span class="timesection-progress"
+                    >{{ year.sectionPassed.toFixed(1) }}% complete</span
+                  >
+                </div>
+                <div v-if="year.percentageAchieved" class="timesection-achievement">
+                  Achievement: {{ year.percentageAchieved.toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+
+            <div
+              v-if="timeSectionStore.months.length === 0 && timeSectionStore.years.length === 0"
+              class="empty"
+            >
+              No months or years available.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -253,13 +353,13 @@ onUnmounted(() => {
 
 .dashboard-content {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
   grid-template-rows: auto minmax(300px, 1fr) minmax(400px, 1fr);
   gap: 1rem;
   grid-template-areas:
-    'grid-item-ongoing grid-item-activities grid-item-regimes grid-item-extra1'
-    'grid-item-stamps grid-item-intervals grid-item-days grid-item-extra1'
-    'grid-item-stamps grid-item-intervals grid-item-days grid-item-extra2';
+    'grid-item-ongoing grid-item-activities grid-item-regimes grid-item-extra1 grid-item-timesection-top'
+    'grid-item-stamps grid-item-intervals grid-item-days grid-item-extra1 grid-item-timesection-top'
+    'grid-item-stamps grid-item-intervals grid-item-days grid-item-extra2 grid-item-timesection-bottom';
   flex: 1;
   min-height: 0;
 }
@@ -312,6 +412,14 @@ onUnmounted(() => {
 
 .grid-item-extra2 {
   grid-area: grid-item-extra2;
+}
+
+.grid-item-timesection-top {
+  grid-area: grid-item-timesection-top;
+}
+
+.grid-item-timesection-bottom {
+  grid-area: grid-item-timesection-bottom;
 }
 
 .card {
@@ -369,5 +477,73 @@ onUnmounted(() => {
 
 .empty {
   color: #9ca3af;
+}
+
+.timesections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.timesections-list h3 {
+  font-size: 1.1rem;
+  color: #667eea;
+  margin: 0 0 0.5rem 0;
+}
+
+.timesection-item {
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.timesection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.timesection-key {
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.timesection-progress {
+  font-size: 0.875rem;
+  color: #667eea;
+  font-weight: 500;
+}
+
+.timesection-achievement {
+  font-size: 0.875rem;
+  color: #059669;
+  font-weight: 500;
+}
+
+/* Admin view specific styles */
+.admin-banner {
+  background: #fef3c7;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.admin-banner p {
+  margin: 0;
+  color: #92400e;
+  font-size: 1rem;
+}
+
+.activity-button.admin-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.activity-button.admin-disabled:hover {
+  opacity: 0.6;
 }
 </style>

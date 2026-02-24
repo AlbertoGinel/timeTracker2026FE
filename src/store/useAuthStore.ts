@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type { User } from '@/type/mainTypes'
+import type { AuthResponse } from '@/API/APITypes'
 import { useAPIAuth } from '@/API/useAPIAuth'
 import { useBundleService } from '@/service/useBundleService'
 import router from '@/router'
@@ -8,28 +9,82 @@ const STORAGE_KEY = 'timetracker_user'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    currentUser: null as User | null,
+    loggedInUser: null as User | null, // The authenticated user (admin or regular)
+    currentContextUser: null as User | null, // The user whose data we're viewing
     isLoading: false,
     error: null as string | null,
   }),
 
   getters: {
-    isAuthenticated: (state) => state.currentUser !== null,
-    isAdmin: (state) => state.currentUser?.role === 'admin',
+    isAuthenticated: (state) => state.loggedInUser !== null,
+    isAdmin: (state) => state.loggedInUser?.role === 'admin',
+    isViewingAsAdmin: (state) =>
+      state.loggedInUser?.role === 'admin' &&
+      state.currentContextUser !== null &&
+      state.loggedInUser.id !== state.currentContextUser.id,
   },
 
   actions: {
     /**
-     * Set the current user and persist to localStorage
+     * Set the logged in user and persist to localStorage
+     * For regular users, also sets them as the context user
      */
     setUser(user: User | null) {
-      this.currentUser = user
+      this.loggedInUser = user
       this.error = null
+
+      // For regular users, they are always the context user
+      if (user && user.role !== 'admin') {
+        this.currentContextUser = user
+      }
 
       if (user) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(user))
       } else {
         localStorage.removeItem(STORAGE_KEY)
+        this.currentContextUser = null
+      }
+    },
+
+    /**
+     * Set the context user (for admin viewing another user's data)
+     */
+    setContextUser(user: User) {
+      if (this.loggedInUser?.role !== 'admin') {
+        throw new Error('Only admins can set context user')
+      }
+      this.currentContextUser = user
+    },
+
+    /**
+     * Clear the context user (admin deselects user)
+     */
+    clearContextUser() {
+      if (this.loggedInUser?.role === 'admin') {
+        this.currentContextUser = null
+      }
+    },
+
+    /**
+     * Process auth response and load data into stores
+     */
+    processAuthResponse(authResponse: AuthResponse) {
+      const user = authResponse.userAuth
+      this.setUser(user)
+
+      // For regular users, load bundle into stores
+      if ('bundle' in authResponse) {
+        const bundleService = useBundleService()
+        bundleService.loadBundleFromAuthResponse(authResponse.bundle)
+      }
+
+      // For admins, load users into userStore
+      if ('usersList' in authResponse) {
+        // Import userStore dynamically to avoid circular dependency
+        import('./useUserStore').then(({ useUserStore }) => {
+          const userStore = useUserStore()
+          userStore.setUsers(authResponse.usersList)
+        })
       }
     },
 
@@ -42,16 +97,14 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         const api = useAPIAuth()
-        const user = await api.login(username, password)
+        const authResponse = await api.login(username, password)
 
-        this.setUser(user)
+        // Process the auth response (sets user and loads bundle/users)
+        this.processAuthResponse(authResponse)
 
-        // Load user bundle after successful login
-        const bundleService = useBundleService()
-        await bundleService.loadUserBundle()
-
-        // Navigate to dashboard after successful login
-        router.push({ name: 'dashboard' })
+        // Navigate based on user role
+        const routeName = authResponse.userAuth.role === 'admin' ? 'admin' : 'user'
+        router.push({ name: routeName })
 
         return true
       } catch (err) {
@@ -78,6 +131,14 @@ export const useAuthStore = defineStore('auth', {
         const bundleService = useBundleService()
         bundleService.clearUserBundle()
 
+        // Clear users list for admin
+        if (this.isAdmin) {
+          import('./useUserStore').then(({ useUserStore }) => {
+            const userStore = useUserStore()
+            userStore.clearUsers()
+          })
+        }
+
         this.setUser(null)
         this.isLoading = false
 
@@ -92,8 +153,11 @@ export const useAuthStore = defineStore('auth', {
     async restoreSession(): Promise<boolean> {
       try {
         const api = useAPIAuth()
-        const user = await api.getCurrentUserProfile()
-        this.setUser(user)
+        const authResponse = await api.getCurrentUserProfile()
+
+        // Process the auth response (sets user and loads bundle/users)
+        this.processAuthResponse(authResponse)
+
         return true
       } catch {
         // Silently fail - no session is normal on first visit

@@ -11,7 +11,7 @@ const props = defineProps<{
 const authStore = useAuthStore()
 
 const formattedTime = computed(() => {
-  const zone = authStore.currentUser?.timezone ?? 'UTC'
+  const zone = authStore.currentContextUser?.timezone ?? 'UTC'
   return DateTime.fromISO(props.stamp.timestamp, { zone: 'utc' })
     .setZone(zone)
     .toFormat('LLL dd, HH:mm')

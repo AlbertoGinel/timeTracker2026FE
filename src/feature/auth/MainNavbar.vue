@@ -11,7 +11,7 @@ const {
   password,
   isAuthenticated,
   isAdmin,
-  currentUser,
+  loggedInUser,
   isLoading,
   error,
   login,
@@ -21,8 +21,12 @@ const {
 // UI-specific state stays in component
 const showPassword = ref(false)
 
-const isOnDashboard = () => route.name === 'dashboard'
-const goToDashboard = () => router.push({ name: 'dashboard' })
+const isOnDashboard = () =>
+  route.name === 'admin' || route.name === 'admin-dashboard' || route.name === 'user'
+const goToDashboard = () => {
+  const routeName = isAdmin.value ? 'admin' : 'user'
+  router.push({ name: routeName })
+}
 
 // UI-specific handlers stay in component
 const handleKeyPress = (event: KeyboardEvent) => {
@@ -76,7 +80,7 @@ const togglePasswordVisibility = () => {
         <!-- Authenticated: Show user info -->
         <div v-else class="user-info">
           <span class="welcome-message">
-            Welcome, <strong>{{ currentUser?.nickname }}</strong>
+            Welcome, <strong>{{ loggedInUser?.nickname }}</strong>
             <span v-if="isAdmin" class="admin-badge">👑 Admin</span>
           </span>
           <button v-if="!isOnDashboard()" class="btn btn-dashboard" @click="goToDashboard">

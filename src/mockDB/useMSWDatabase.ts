@@ -271,7 +271,7 @@ export const initializeDatabase = async () => {
     console.log('📦 IndexedDB empty - seeding fresh data...')
 
     // Create users
-    const user1 = db.user.create({
+    db.user.create({
       id: crypto.randomUUID(),
       username: 'john_doe',
       password: 'password123',
@@ -304,54 +304,7 @@ export const initializeDatabase = async () => {
     // Create activities for each user
     const now = new Date().toISOString()
 
-    // John's activities
-    const johnCoding = db.activity.create({
-      id: crypto.randomUUID(),
-      color: '#3B82F6',
-      name: 'Coding',
-      icon: '💻',
-      points_per_hour: 100,
-      seconds_free: 3600,
-      created_at: now,
-      updated_at: now,
-      user: user1.id,
-    })
-
-    const johnExercise = db.activity.create({
-      id: crypto.randomUUID(),
-      color: '#10B981',
-      name: 'Exercise',
-      icon: '🏃',
-      points_per_hour: 80,
-      seconds_free: 1800,
-      created_at: now,
-      updated_at: now,
-      user: user1.id,
-    })
-
-    const johnReading = db.activity.create({
-      id: crypto.randomUUID(),
-      color: '#F59E0B',
-      name: 'Reading',
-      icon: '📚',
-      points_per_hour: 60,
-      seconds_free: 2400,
-      created_at: now,
-      updated_at: now,
-      user: user1.id,
-    })
-
-    db.activity.create({
-      id: crypto.randomUUID(),
-      color: '#EF4444',
-      name: 'Social Media',
-      icon: '📱',
-      points_per_hour: -60,
-      seconds_free: 1800,
-      created_at: now,
-      updated_at: now,
-      user: user1.id,
-    })
+    // Admin (john_doe) has NO activities - admins don't track time, they view others' data
 
     // Jane's activities
     const janeWriting = db.activity.create({
@@ -469,96 +422,7 @@ export const initializeDatabase = async () => {
     }
 
     // Create regimes for each user
-    // John's regimes
-    // 1. Holiday regime
-    db.regime.create({
-      id: crypto.randomUUID(),
-      user: user1.id,
-      icon: '🏖️',
-      name: 'Holiday',
-      isHoliday: true,
-      intervals: [],
-      totalPoints: 0,
-      totalDurationMs: 0,
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    // 2. Workday regime (Coding 9-17, Exercise 18-19, Reading 21-22)
-    const johnWorkdayIntervals: IntervalDB[] = [
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnCoding.id,
-        startTime: '09:00',
-        endTime: '17:00',
-        durationMs: calculateRegimeIntervalDuration('09:00', '17:00'),
-      },
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnExercise.id,
-        startTime: '18:00',
-        endTime: '19:00',
-        durationMs: calculateRegimeIntervalDuration('18:00', '19:00'),
-      },
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnReading.id,
-        startTime: '21:00',
-        endTime: '22:00',
-        durationMs: calculateRegimeIntervalDuration('21:00', '22:00'),
-      },
-    ]
-    const johnWorkdayMetrics = calculateRegimeMetrics(johnWorkdayIntervals, getActivity)
-    db.regime.create({
-      id: crypto.randomUUID(),
-      user: user1.id,
-      icon: '💼',
-      name: 'Workday',
-      isHoliday: false,
-      intervals: johnWorkdayIntervals,
-      totalPoints: johnWorkdayMetrics.totalPoints,
-      totalDurationMs: johnWorkdayMetrics.totalDurationMs,
-      createdAt: now,
-      updatedAt: now,
-    })
-
-    // 3. Restday regime (Exercise 10-11, Reading 14-17, Exercise 18-19)
-    const johnRestdayIntervals: IntervalDB[] = [
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnExercise.id,
-        startTime: '10:00',
-        endTime: '11:00',
-        durationMs: calculateRegimeIntervalDuration('10:00', '11:00'),
-      },
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnReading.id,
-        startTime: '14:00',
-        endTime: '17:00',
-        durationMs: calculateRegimeIntervalDuration('14:00', '17:00'),
-      },
-      {
-        intervalId: crypto.randomUUID(),
-        activityId: johnExercise.id,
-        startTime: '18:00',
-        endTime: '19:00',
-        durationMs: calculateRegimeIntervalDuration('18:00', '19:00'),
-      },
-    ]
-    const johnRestdayMetrics = calculateRegimeMetrics(johnRestdayIntervals, getActivity)
-    db.regime.create({
-      id: crypto.randomUUID(),
-      user: user1.id,
-      icon: '🛋️',
-      name: 'Restday',
-      isHoliday: false,
-      intervals: johnRestdayIntervals,
-      totalPoints: johnRestdayMetrics.totalPoints,
-      totalDurationMs: johnRestdayMetrics.totalDurationMs,
-      createdAt: now,
-      updatedAt: now,
-    })
+    // Admin (john_doe) has NO regimes - admins don't track time
 
     // Jane's regimes
     // 1. Holiday regime
