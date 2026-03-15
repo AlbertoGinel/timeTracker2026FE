@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import type { User } from '@/type/mainTypes'
-import type { AuthResponse } from '@/API/APITypes'
+import type { AuthResponse, UserResponse } from '@/API/APITypes'
 import { useAPIAuth } from '@/API/useAPIAuth'
 import { useBundleService } from '@/service/useBundleService'
 import router from '@/router'
@@ -9,8 +9,8 @@ const STORAGE_KEY = 'timetracker_user'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    loggedInUser: null as User | null, // The authenticated user (admin or regular)
-    currentContextUser: null as User | null, // The user whose data we're viewing
+    loggedInUser: null as UserResponse | null, // The authenticated user (admin or regular)
+    currentContextUser: null as UserResponse | null, // The user whose data we're viewing
     isLoading: false,
     error: null as string | null,
   }),
@@ -29,7 +29,7 @@ export const useAuthStore = defineStore('auth', {
      * Set the logged in user and persist to localStorage
      * For regular users, also sets them as the context user
      */
-    setUser(user: User | null) {
+    setUser(user: UserResponse | null) {
       this.loggedInUser = user
       this.error = null
 
@@ -49,7 +49,7 @@ export const useAuthStore = defineStore('auth', {
     /**
      * Set the context user (for admin viewing another user's data)
      */
-    setContextUser(user: User) {
+    setContextUser(user: UserResponse) {
       if (this.loggedInUser?.role !== 'admin') {
         throw new Error('Only admins can set context user')
       }
@@ -180,6 +180,34 @@ export const useAuthStore = defineStore('auth', {
         return true
       } catch (err) {
         this.error = err instanceof Error ? err.message : 'Update failed'
+        return false
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    /**
+     * Update user's scale levels
+     */
+    async updateScale(scale: User['scale']): Promise<boolean> {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const api = useAPIAuth()
+        const user = await api.updateProfile({ scale })
+
+        // Update the user with new scale
+        this.setUser(user)
+
+        // Also update context user if we're viewing as admin
+        if (this.currentContextUser && this.currentContextUser.id === user.id) {
+          this.currentContextUser = user
+        }
+
+        return true
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Failed to update scale'
         return false
       } finally {
         this.isLoading = false

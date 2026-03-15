@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
-import type { User } from '@/type/mainTypes'
+import type { UserResponse } from '@/API/APITypes'
+import type { ScaleLevel } from '@/type/mainTypes'
 import { useAPIAdmin } from '@/API/useAPIAdmin'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    users: [] as User[],
+    users: [] as UserResponse[],
     isLoading: false,
     error: null as string | null,
   }),
@@ -22,7 +23,7 @@ export const useUserStore = defineStore('user', {
     /**
      * Set users from auth response (for admins)
      */
-    setUsers(users: User[]): void {
+    setUsers(users: UserResponse[]): void {
       this.users = users
       this.error = null
     },
@@ -48,6 +49,29 @@ export const useUserStore = defineStore('user', {
     clearUsers(): void {
       this.users = []
       this.error = null
+    },
+
+    async updateUserScale(userId: string, scale: ScaleLevel[]): Promise<boolean> {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const api = useAPIAdmin()
+        const user = await api.updateUser(userId, { scale })
+
+        // Update the user in the list
+        const userIndex = this.users.findIndex((u) => u.id === userId)
+        if (userIndex !== -1) {
+          this.users[userIndex] = user
+        }
+
+        return true
+      } catch (err) {
+        this.error = err instanceof Error ? err.message : 'Failed to update scale'
+        return false
+      } finally {
+        this.isLoading = false
+      }
     },
   },
 })

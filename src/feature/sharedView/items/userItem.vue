@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/store/useAuthStore'
 import { computed } from 'vue'
-import type { User } from '@/type/mainTypes'
+import type { UserResponse } from '@/API/APITypes'
 import adminStyles from '@/styles/adminListItem.module.css'
 
 const props = defineProps<{
-  user?: User | null
+  user?: UserResponse | null
   variant?: 'default' | 'admin'
 }>()
 

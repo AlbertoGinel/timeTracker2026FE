@@ -1,5 +1,5 @@
 import type { User } from '@/type/mainTypes'
-import type { AuthResponse } from './APITypes'
+import type { AuthResponse, UserResponse } from './APITypes'
 import { useHandleRequest } from './useHandleRequest'
 /**
  * Authentication API - handles user login, logout, and profile operations
@@ -23,7 +23,7 @@ export const useAPIAuth = () => {
     getCurrentUserProfile: () => handleRequest<AuthResponse>('/api/auth/profile/'),
 
     updateProfile: (updates: Partial<User>) =>
-      handleRequest<User>('/api/auth/profile/', {
+      handleRequest<UserResponse>('/api/auth/profile/', {
         method: 'PATCH',
         body: JSON.stringify(updates),
       }),

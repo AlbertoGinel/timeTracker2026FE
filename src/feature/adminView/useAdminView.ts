@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
-import type { Activity } from '@/type/mainTypes'
+import type { Activity, ScaleLevel } from '@/type/mainTypes'
+import type { UserResponse } from '@/API/APITypes'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useUserStore } from '@/store/useUserStore'
 import { useStampStore } from '@/store/useStampStore'
@@ -7,6 +8,7 @@ import { useIntervalStore } from '@/store/useIntervalStore'
 import { useActivityStore } from '@/store/useActivityStore'
 import { useRegimeStore } from '@/store/useRegimeStore'
 import { useBundleService } from '@/service/useBundleService'
+import { useEditModal } from '@/feature/sharedView/editModal/useEditModal'
 
 export const useAdminView = () => {
   const authStore = useAuthStore()
@@ -16,10 +18,11 @@ export const useAdminView = () => {
   const activityStore = useActivityStore()
   const regimeStore = useRegimeStore()
   const bundleService = useBundleService()
+  const editModal = useEditModal()
 
   const selectedUserId = ref<string>('')
 
-  const selectedUser = computed(() => {
+  const selectedUser = computed<UserResponse | null>(() => {
     if (!selectedUserId.value) return null
     return userStore.users.find((u) => u.id === selectedUserId.value) || null
   })
@@ -96,6 +99,16 @@ export const useAdminView = () => {
     }
   }
 
+  const handleScaleSave = async (scale: ScaleLevel[]) => {
+    if (!selectedUser.value) return
+
+    const success = await userStore.updateUserScale(selectedUser.value.id, scale)
+
+    if (success) {
+      editModal.closeModal()
+    }
+  }
+
   return {
     userStore,
     activityStore,
@@ -108,5 +121,7 @@ export const useAdminView = () => {
     onUserSelected,
     onActivityPressed,
     onStopPressed,
+    editModal,
+    handleScaleSave,
   }
 }

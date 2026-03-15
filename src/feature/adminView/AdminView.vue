@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import UserItem from '@/feature/sharedView/userItem.vue'
-import StampItem from '@/feature/sharedView/StampItem.vue'
-import IntervalItem from '@/feature/sharedView/IntervalItem.vue'
-import ActivityItem from '@/feature/sharedView/ActivityItem.vue'
-import RegimeItem from '@/feature/sharedView/RegimeItem.vue'
+import UserItem from '../sharedView/items/userItem.vue'
+import StampItem from '../sharedView/items/StampItem.vue'
+import IntervalItem from '../sharedView/items/IntervalItem.vue'
+import ActivityItem from '../sharedView/items/ActivityItem.vue'
+import RegimeItem from '../sharedView/items/RegimeItem.vue'
 import OngoinInterval from '@/feature/sharedView/OngoinInterval.vue'
 import ContinuousCalendar from '@/feature/sharedView/continuousCalendar/continuousCalendar.vue'
 import ClockDisplay from '@/feature/sharedView/clock.vue'
-import TimeSectionItem from '@/feature/sharedView/TimeSectionItem.vue'
+import TimeSectionItem from '../sharedView/items/TimeSectionItem.vue'
+import CronoDay from '@/feature/sharedView/cronoDay/cronoDay.vue'
+import EditModal from '@/feature/sharedView/editModal/EditModal.vue'
 import { useAdminView } from './useAdminView'
 import { useTimeSectionStore } from '@/store/useTimeSectionStore'
 
@@ -23,6 +25,8 @@ const {
   onUserSelected,
   onActivityPressed,
   onStopPressed,
+  editModal,
+  handleScaleSave,
 } = useAdminView()
 
 const timeSectionStore = useTimeSectionStore()
@@ -50,6 +54,15 @@ const timeSectionStore = useTimeSectionStore()
         </div>
         <div :class="$style.card">
           <UserItem v-if="selectedUser" :user="selectedUser" variant="admin" />
+          <button
+            v-if="selectedUser"
+            :class="$style.editButton"
+            @click="
+              editModal.openModal('scale', { initialScale: selectedUser.scale, mode: 'edit' })
+            "
+          >
+            Edit Scale
+          </button>
         </div>
       </div>
 
@@ -60,6 +73,7 @@ const timeSectionStore = useTimeSectionStore()
             <ClockDisplay v-if="selectedUser" />
             <OngoinInterval :interval="ongoingInterval" :on-stop="onStopPressed" />
           </div>
+
           <ActivityItem
             v-for="activity in activityStore.activities"
             :key="activity.id"
@@ -67,15 +81,28 @@ const timeSectionStore = useTimeSectionStore()
             variant="admin"
             :on-click="onActivityPressed"
           />
-          <div :class="$style.regimesSection">
-            <h4 :class="$style.sectionTitle">Regimes</h4>
-            <RegimeItem
-              v-for="regime in regimeStore.regimes"
-              :key="regime.id"
-              :regime="regime"
-              variant="admin"
-            />
-          </div>
+          <button
+            v-if="selectedUser"
+            :class="$style.editButton"
+            @click="editModal.openModal('activity')"
+          >
+            Edit Activity
+          </button>
+
+          <h4 :class="$style.sectionTitle">Regimes</h4>
+          <RegimeItem
+            v-for="regime in regimeStore.regimes"
+            :key="regime.id"
+            :regime="regime"
+            variant="admin"
+          />
+          <button
+            v-if="selectedUser"
+            :class="$style.editButton"
+            @click="editModal.openModal('regime')"
+          >
+            Edit Regime
+          </button>
         </div>
       </div>
 
@@ -149,16 +176,29 @@ const timeSectionStore = useTimeSectionStore()
         </div>
       </div>
 
-      <div :class="$style.gridItem">
-        <h3>Section 9</h3>
-        <div :class="$style.card">Content 9</div>
-      </div>
-
-      <div :class="$style.gridItem">
-        <h3>Section 10</h3>
-        <div :class="$style.card">Content 10</div>
+      <div :class="[$style.gridItem, $style.spanTwo]">
+        <h3>Day Timeline</h3>
+        <div :class="$style.card">
+          <CronoDay :width="450" :height="100" />
+          <button
+            v-if="selectedUser"
+            :class="$style.editButton"
+            @click="editModal.openModal('day')"
+          >
+            Edit Day
+          </button>
+        </div>
       </div>
     </div>
+
+    <EditModal :is-open="editModal.isOpen.value" @close="editModal.closeModal">
+      <component
+        :is="editModal.currentForm.value"
+        v-bind="editModal.formProps.value"
+        @save="handleScaleSave"
+        @cancel="editModal.closeModal"
+      />
+    </EditModal>
   </div>
 </template>
 
@@ -272,5 +312,28 @@ const timeSectionStore = useTimeSectionStore()
   text-align: center;
   padding: var(--spacing-xl);
   margin: 0;
+}
+
+/* Button styles */
+.editButton {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  margin: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: var(--font-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.editButton:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.editButton:active {
+  transform: translateY(0);
 }
 </style>

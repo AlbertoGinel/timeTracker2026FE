@@ -2,6 +2,7 @@ import { computed } from 'vue'
 import { DateTime } from 'luxon'
 import { useDayStore } from '@/store/useDayStore'
 import { useTimeSectionStore } from '@/store/useTimeSectionStore'
+import { useCronoDayState } from '@/feature/sharedView/cronoDay/useCronoDayState'
 import type { Day, TimeSection } from '@/type/mainTypes'
 
 export interface WeekRow {
@@ -28,6 +29,7 @@ export interface CalendarCell {
 export function useContinuousCalendar(timezone: string) {
   const dayStore = useDayStore()
   const timeSectionStore = useTimeSectionStore()
+  const { setSelectedDate } = useCronoDayState(timezone)
 
   /**
    * Get current date in the user's timezone as YYYY-MM-DD
@@ -172,6 +174,9 @@ export function useContinuousCalendar(timezone: string) {
       isToday: cell.isToday,
       hasData: !!cell.day,
     })
+
+    // Update the selected date for cronoDay
+    setSelectedDate(cell.dateKey)
   }
 
   return {

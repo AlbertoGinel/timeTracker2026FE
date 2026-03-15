@@ -15,13 +15,7 @@ export const useTimeSectionStore = defineStore('timeSection', {
      * Get a week by its sectionKey
      */
     getWeekByKey: (state) => (sectionKey: string) => {
-      const found = state.weeks.find((w) => w.sectionKey === sectionKey)
-      console.log('🔍 [getWeekByKey]', sectionKey, {
-        found: !!found,
-        availableKeys: state.weeks.map((w) => w.sectionKey),
-        totalWeeks: state.weeks.length,
-      })
-      return found
+      return state.weeks.find((w) => w.sectionKey === sectionKey)
     },
 
     /**

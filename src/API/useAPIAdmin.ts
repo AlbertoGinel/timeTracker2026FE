@@ -1,4 +1,5 @@
 import type { User, Activity } from '@/type/mainTypes'
+import type { UserResponse } from './APITypes'
 import { useHandleRequest } from './useHandleRequest'
 
 /**
@@ -10,12 +11,12 @@ export const useAPIAdmin = () => {
   const { handleRequest } = useHandleRequest()
 
   return {
-    getAllUsers: () => handleRequest<User[]>('/api/admin/users/'),
+    getAllUsers: () => handleRequest<UserResponse[]>('/api/admin/users/'),
 
-    getUserById: (id: string) => handleRequest<User>(`/api/admin/users/${id}/`),
+    getUserById: (id: string) => handleRequest<UserResponse>(`/api/admin/users/${id}/`),
 
     updateUser: (id: string, updates: Partial<User>) =>
-      handleRequest<User>(`/api/admin/users/${id}/`, {
+      handleRequest<UserResponse>(`/api/admin/users/${id}/`, {
         method: 'PATCH',
         body: JSON.stringify(updates),
       }),
