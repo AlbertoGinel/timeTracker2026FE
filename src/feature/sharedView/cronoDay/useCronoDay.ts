@@ -1,6 +1,9 @@
 import { computed, type ComputedRef } from 'vue'
 import { DateTime } from 'luxon'
-import type { DayInterval } from '@/type/mainTypes'
+import type { DayInterval, RegimeInterval } from '@/type/mainTypes'
+
+// Union type that works with both Day and Regime intervals
+export type TimelineInterval = DayInterval | RegimeInterval
 
 export type TimelineBlock = {
   x: number
@@ -18,7 +21,11 @@ export type HourLabel = {
   x: number
 }
 
-export function useCronoDay(intervals: ComputedRef<DayInterval[]>, width = 1200, padding = 50) {
+export function useCronoDay(
+  intervals: ComputedRef<TimelineInterval[]>,
+  width = 1200,
+  padding = 50,
+) {
   const timelineWidth = computed(() => width - padding * 2)
 
   // Convert time string (HH:mm or ISO) to minutes from start of day
@@ -69,15 +76,19 @@ export function useCronoDay(intervals: ComputedRef<DayInterval[]>, width = 1200,
   // Convert intervals to timeline blocks
   const timelineBlocks = computed<TimelineBlock[]>(() => {
     return intervals.value.map((interval) => {
-      const startX = timeToPosition(interval.startLocal)
-      const endX = timeToPosition(interval.endLocal)
+      // Handle both DayInterval (startLocal/endLocal) and RegimeInterval (startTime/endTime)
+      const startTime = 'startLocal' in interval ? interval.startLocal : interval.startTime
+      const endTime = 'endLocal' in interval ? interval.endLocal : interval.endTime
+
+      const startX = timeToPosition(startTime)
+      const endX = timeToPosition(endTime)
 
       return {
         x: startX,
         width: endX - startX,
         color: interval.activity.color,
-        startLabel: formatTime(interval.startLocal),
-        endLabel: formatTime(interval.endLocal),
+        startLabel: formatTime(startTime),
+        endLabel: formatTime(endTime),
         activityName: interval.activity.name,
         activityIcon: interval.activity.icon,
       }

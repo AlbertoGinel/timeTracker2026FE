@@ -109,6 +109,37 @@ export const useAdminView = () => {
     }
   }
 
+  const handleRegimeSave = async (regimes: Array<{ name: string; icon: string }>) => {
+    if (!selectedUserId.value) return
+
+    // For now, we'll update/create regimes one by one
+    // In a real implementation, you might want to handle this more efficiently
+    let hasChanges = false
+
+    for (const regimeData of regimes) {
+      const existingRegime = regimeStore.regimes.find(
+        (r) => r.name === regimeData.name && r.icon === regimeData.icon && !r.isHoliday,
+      )
+
+      if (!existingRegime) {
+        // Create new regime (non-holiday)
+        const created = await regimeStore.createRegime({
+          ...regimeData,
+          isHoliday: false,
+          intervals: [], // Empty intervals for now
+        })
+        if (created) hasChanges = true
+      }
+    }
+
+    if (hasChanges) {
+      await bundleService.loadUserBundle(selectedUserId.value)
+      editModal.closeModal()
+    } else {
+      editModal.closeModal()
+    }
+  }
+
   return {
     userStore,
     activityStore,
@@ -123,5 +154,6 @@ export const useAdminView = () => {
     onStopPressed,
     editModal,
     handleScaleSave,
+    handleRegimeSave,
   }
 }

@@ -27,6 +27,7 @@ const {
   onStopPressed,
   editModal,
   handleScaleSave,
+  handleRegimeSave,
 } = useAdminView()
 
 const timeSectionStore = useTimeSectionStore()
@@ -99,7 +100,7 @@ const timeSectionStore = useTimeSectionStore()
           <button
             v-if="selectedUser"
             :class="$style.editButton"
-            @click="editModal.openModal('regime')"
+            @click="editModal.openModal('regime', { initialRegimes: regimeStore.regimes })"
           >
             Edit Regime
           </button>
@@ -195,7 +196,18 @@ const timeSectionStore = useTimeSectionStore()
       <component
         :is="editModal.currentForm.value"
         v-bind="editModal.formProps.value"
-        @save="handleScaleSave"
+        @save="
+          (data: any) => {
+            // Route to appropriate handler based on data type
+            if (Array.isArray(data) && data.length > 0 && 'percent' in data[0]) {
+              handleScaleSave(data)
+            } else if (Array.isArray(data) && data.length > 0 && 'isHoliday' in data[0]) {
+              handleRegimeSave(data)
+            } else if (Array.isArray(data)) {
+              handleScaleSave(data)
+            }
+          }
+        "
         @cancel="editModal.closeModal"
       />
     </EditModal>

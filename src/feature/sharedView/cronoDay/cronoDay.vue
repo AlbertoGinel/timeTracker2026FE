@@ -1,78 +1,71 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useCronoDay } from './useCronoDay'
 import { useCronoDayState } from './useCronoDayState'
 import { useAuthStore } from '@/store/useAuthStore'
-import CronoIntervalItem from './CronoIntervalItem.vue'
+import CronoDayTimeline from './CronoDayTimeline.vue'
+import type { TimelineInterval } from './useCronoDay'
 
 const props = withDefaults(
   defineProps<{
+    intervals?: TimelineInterval[]
     width?: number
     height?: number
+    mode?: 'view' | 'edit'
   }>(),
   {
     width: 1200,
     height: 100,
+    mode: 'view',
   },
 )
 
 const authStore = useAuthStore()
 const timezone = computed(() => authStore.currentContextUser?.timezone || 'UTC')
 
-const {
-  selectedDateKey,
-  selectedDateDisplay,
-  selectedDayIntervals,
-  isToday,
-  resetToToday,
-  goToPreviousDay,
-  goToNextDay,
-} = useCronoDayState(timezone.value)
+// Only use state management in view mode
+const cronoDayState = props.mode === 'view' ? useCronoDayState(timezone.value) : null
 
-const { hourLabels, timelineBlocks, padding } = useCronoDay(selectedDayIntervals, props.width, 50)
+// Use provided intervals or fetch from state (view mode only)
+const displayIntervals = computed(() => {
+  if (props.mode === 'edit') {
+    return props.intervals ?? []
+  }
+  return cronoDayState?.selectedDayIntervals.value ?? []
+})
 </script>
 
 <template>
-  <!-- Debug area for selected day -->
-  <div class="debug-area">
-    <div class="debug-content">
-      <button @click="goToPreviousDay" class="nav-button">←</button>
-      <div class="date-display">
-        <span class="date-label">{{ selectedDateDisplay }}</span>
-        <span v-if="isToday" class="today-badge">Today</span>
-      </div>
-      <button @click="goToNextDay" class="nav-button">→</button>
-      <button v-if="!isToday" @click="resetToToday" class="today-button">Go to Today</button>
-    </div>
-    <div class="date-key">Date key: {{ selectedDateKey }}</div>
-  </div>
-
   <div class="crono-day-container">
-    <svg :viewBox="`0 0 ${width} ${height}`" class="crono-day-timeline">
-      <!-- Hour labels -->
-      <g class="hour-labels">
-        <text v-for="hour in hourLabels" :key="hour.value" :x="hour.x" :y="20" class="hour-text">
-          {{ hour.label }}
-        </text>
-      </g>
+    <!-- Date selector - only show in view mode -->
+    <div v-if="mode === 'view' && cronoDayState" class="debug-area">
+      <div class="debug-content">
+        <button @click="cronoDayState.goToPreviousDay" class="nav-button">←</button>
+        <div class="date-display">
+          <span class="date-label">{{ cronoDayState.selectedDateDisplay }}</span>
+          <span v-if="cronoDayState.isToday" class="today-badge">Today</span>
+        </div>
+        <button @click="cronoDayState.goToNextDay" class="nav-button">→</button>
+        <button
+          v-if="!cronoDayState.isToday"
+          @click="cronoDayState.resetToToday"
+          class="today-button"
+        >
+          Go to Today
+        </button>
+      </div>
+      <div class="date-key">Date key: {{ cronoDayState.selectedDateKey }}</div>
+    </div>
 
-      <!-- Timeline base line -->
-      <line
-        :x1="padding"
-        :y1="40"
-        :x2="width - padding"
-        :y2="40"
-        stroke="#d1d5db"
-        stroke-width="2"
-      />
-
-      <!-- Time interval blocks -->
-      <CronoIntervalItem v-for="(block, index) in timelineBlocks" :key="index" :block="block" />
-    </svg>
+    <!-- Timeline visualization -->
+    <CronoDayTimeline :intervals="displayIntervals" :width="width" :height="height" :mode="mode" />
   </div>
 </template>
 
 <style scoped>
+.crono-day-container {
+  width: 100%;
+}
+
 .debug-area {
   padding: 0.75rem 1rem;
   background: #f3f4f6;
@@ -146,29 +139,4 @@ const { hourLabels, timelineBlocks, padding } = useCronoDay(selectedDayIntervals
 .today-button:hover {
   background: #2563eb;
 }
-
-.crono-day-container {
-  width: 100%;
-  overflow-x: auto;
-  padding: 1rem 0;
-}
-
-.crono-day-timeline {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.hour-text {
-  font-size: 14px;
-  fill: #2563eb;
-  text-anchor: middle;
-  font-weight: 600;
-  font-family:
-    system-ui,
-    -apple-system,
-    sans-serif;
-}
-
-/* Interval block styles are now in CronoIntervalItem.vue */
 </style>

@@ -1,5 +1,5 @@
 import { ref, markRaw, type Component } from 'vue'
-import type { ScaleLevel } from '@/type/mainTypes'
+import type { ScaleLevel, Regime } from '@/type/mainTypes'
 import ScaleForm from './forms/scaleForm/ScaleForm.vue'
 import ActivityForm from './forms/activityForm/ActivityForm.vue'
 import RegimeForm from './forms/regimeForm/RegimeForm.vue'
@@ -13,8 +13,12 @@ interface ScaleFormProps {
   mode?: 'new' | 'edit'
 }
 
+interface RegimeFormProps {
+  initialRegimes?: Regime[]
+}
+
 // Union type for all form props (extend as other forms are implemented)
-type FormProps = ScaleFormProps | Record<string, never> // Record<string, never> for forms without props
+type FormProps = ScaleFormProps | RegimeFormProps | Record<string, never> // Record<string, never> for forms without props
 
 export const useEditModal = () => {
   const isOpen = ref(false)

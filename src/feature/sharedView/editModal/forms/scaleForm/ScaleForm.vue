@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import type { ScaleLevel } from '@/type/mainTypes'
 import { useScaleForm } from './useScaleForm'
-import EditLevelItem from './EditLevelItem.vue'
 
 interface Props {
   initialScale?: ScaleLevel[]
@@ -79,10 +78,10 @@ const getFieldErrors = (index: number) => {
           :index="index"
           :can-delete="canDelete"
           :errors="getFieldErrors(index)"
-          @update:name="(value) => updateLevel(index, 'name', value)"
-          @update:color="(value) => updateLevel(index, 'color', value)"
-          @update:icon="(value) => updateLevel(index, 'icon', value)"
-          @update:percent="(value) => updateLevel(index, 'percent', value)"
+          @update:name="(value: string) => updateLevel(index, 'name', value)"
+          @update:color="(value: string) => updateLevel(index, 'color', value)"
+          @update:icon="(value: string) => updateLevel(index, 'icon', value)"
+          @update:percent="(value: number) => updateLevel(index, 'percent', value)"
           @percent-blur="sortLevels"
           @delete="removeLevel(index)"
         />
